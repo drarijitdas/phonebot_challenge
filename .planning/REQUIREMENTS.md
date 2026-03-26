@@ -90,35 +90,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STT-01 | -- | Pending |
-| STT-02 | -- | Pending |
-| STT-03 | -- | Pending |
-| EXT-01 | -- | Pending |
-| EXT-02 | -- | Pending |
-| EXT-03 | -- | Pending |
-| EXT-04 | -- | Pending |
-| EXT-05 | -- | Pending |
-| EVAL-01 | -- | Pending |
-| EVAL-02 | -- | Pending |
-| EVAL-03 | -- | Pending |
-| EVAL-04 | -- | Pending |
-| OBS-01 | -- | Pending |
-| OBS-02 | -- | Pending |
-| AB-01 | -- | Pending |
-| AB-02 | -- | Pending |
-| OPT-01 | -- | Pending |
-| OPT-02 | -- | Pending |
-| INFRA-01 | -- | Pending |
-| INFRA-02 | -- | Pending |
-| QUAL-01 | -- | Pending |
-| QUAL-02 | -- | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| EVAL-01 | Phase 1 | Pending |
+| EVAL-02 | Phase 1 | Pending |
+| EVAL-03 | Phase 1 | Pending |
+| EVAL-04 | Phase 1 | Pending |
+| STT-01 | Phase 2 | Pending |
+| STT-02 | Phase 2 | Pending |
+| STT-03 | Phase 2 | Pending |
+| EXT-01 | Phase 3 | Pending |
+| EXT-02 | Phase 3 | Pending |
+| EXT-03 | Phase 3 | Pending |
+| EXT-05 | Phase 3 | Pending |
+| QUAL-01 | Phase 3 | Pending |
+| OBS-01 | Phase 4 | Pending |
+| OBS-02 | Phase 4 | Pending |
+| AB-01 | Phase 5 | Pending |
+| AB-02 | Phase 5 | Pending |
+| OPT-01 | Phase 6 | Pending |
+| OPT-02 | Phase 6 | Pending |
+| EXT-04 | Phase 7 | Pending |
+| QUAL-02 | Phase 7 | Pending |
 
 **Coverage:**
 
 - v1.0 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22
+- Mapped to phases: 22
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after initial definition*
+*Last updated: 2026-03-26 after roadmap creation — all 22 requirements mapped*
