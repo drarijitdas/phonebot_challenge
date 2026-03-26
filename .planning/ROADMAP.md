@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Running `uv run python -m evaluation.metrics` against `data/ground_truth.json` prints per-field accuracy for a set of mock results (showing 0% baseline)
   4. Phone numbers in evaluation output are normalized to E.164 via `phonenumbers` before comparison — a correct extraction with different formatting scores as correct
   5. Multi-value ground truth fields (e.g., "Lisa Marie" or "Lisa-Marie") are handled — either acceptable value scores as correct
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 01-01-PLAN.md — Project scaffold, CallerInfo model, and CLI entrypoint
+- [x] 01-01-PLAN.md — Project scaffold, CallerInfo model, and CLI entrypoint
 - [ ] 01-02-PLAN.md — Evaluation harness with E.164 normalization, multi-value support, and tests
 
 ### Phase 2: Transcription
@@ -109,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Planning complete | - |
+| 1. Foundation | 1/2 | In Progress|  |
 | 2. Transcription | 0/TBD | Not started | - |
 | 3. Extraction Pipeline | 0/TBD | Not started | - |
 | 4. Observability | 0/TBD | Not started | - |

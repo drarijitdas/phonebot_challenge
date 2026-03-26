@@ -45,8 +45,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: Project uses `uv` for dependency management with Python 3.13
-- [ ] **INFRA-02**: Pipeline runs via CLI entrypoint with clear arguments
+- [x] **INFRA-01**: Project uses `uv` for dependency management with Python 3.13
+- [x] **INFRA-02**: Pipeline runs via CLI entrypoint with clear arguments
 
 ### Quality
 
@@ -90,8 +90,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
 | EVAL-01 | Phase 1 | Pending |
 | EVAL-02 | Phase 1 | Pending |
 | EVAL-03 | Phase 1 | Pending |
