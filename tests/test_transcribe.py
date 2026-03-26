@@ -1,4 +1,9 @@
-"""Unit tests for transcription module with mocked Deepgram client."""
+"""Unit tests for transcription module with mocked Deepgram client.
+
+deepgram-sdk v6 (Fern-generated) exposes direct keyword args on
+transcribe_file() with no PrerecordedOptions wrapper. Response objects are
+Pydantic models; the mock uses model_dump_json() for serialization.
+"""
 import asyncio
 import importlib
 import json
@@ -40,9 +45,13 @@ FAKE_DEEPGRAM_JSON = json.dumps(
 
 
 def _make_mock_client():
-    """Create a mock AsyncDeepgramClient that returns FAKE_DEEPGRAM_JSON."""
+    """Create a mock AsyncDeepgramClient that returns a response with FAKE_DEEPGRAM_JSON.
+
+    In SDK v6 the response is a Pydantic model; we mock model_dump_json() to
+    return the fake JSON string.
+    """
     mock_response = MagicMock()
-    mock_response.to_json.return_value = FAKE_DEEPGRAM_JSON
+    mock_response.model_dump_json.return_value = FAKE_DEEPGRAM_JSON
 
     mock_transcribe = AsyncMock(return_value=mock_response)
 
@@ -83,12 +92,15 @@ def test_skips_existing_cache(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Deepgram API call
+# Deepgram API call with correct options
 # ---------------------------------------------------------------------------
 
 
 def test_calls_deepgram_when_no_cache(tmp_path):
-    """_transcribe_one calls Deepgram transcribe_file when no cache exists."""
+    """_transcribe_one calls Deepgram transcribe_file when no cache exists.
+
+    SDK v6 passes options as direct keyword args (no PrerecordedOptions wrapper).
+    """
     from phonebot.pipeline import transcribe
 
     mock_client, mock_transcribe = _make_mock_client()
@@ -101,15 +113,14 @@ def test_calls_deepgram_when_no_cache(tmp_path):
         asyncio.run(transcribe._transcribe_one(mock_client, wav_path, semaphore))
 
     mock_transcribe.assert_called_once()
-    call_kwargs = mock_transcribe.call_args
-    options = call_kwargs.kwargs.get("options") or call_kwargs.args[1]
+    call_kwargs = mock_transcribe.call_args.kwargs
 
-    assert options.model == "nova-3"
-    assert options.language == "de"
-    assert options.smart_format is True
-    assert options.punctuate is True
-    assert options.diarize is True
-    assert options.paragraphs is True
+    assert call_kwargs["model"] == "nova-3"
+    assert call_kwargs["language"] == "de"
+    assert call_kwargs["smart_format"] is True
+    assert call_kwargs["punctuate"] is True
+    assert call_kwargs["diarize"] is True
+    assert call_kwargs["paragraphs"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -215,31 +226,28 @@ def test_concurrency_default():
     # Ensure env var is absent then reimport
     original = os.environ.pop("DEEPGRAM_CONCURRENCY", None)
     try:
-        if "phonebot.pipeline.transcribe" in sys.modules:
-            del sys.modules["phonebot.pipeline.transcribe"]
-        from phonebot.pipeline import transcribe as t
+        # Remove cached module so it re-evaluates CONCURRENCY
+        sys.modules.pop("phonebot.pipeline.transcribe", None)
+        import phonebot.pipeline.transcribe as t  # noqa: PLC0415
 
+        # Reload to pick up the env change
         importlib.reload(t)
         assert t.CONCURRENCY == 5
     finally:
         if original is not None:
             os.environ["DEEPGRAM_CONCURRENCY"] = original
-        # Re-cache standard import
-        if "phonebot.pipeline.transcribe" in sys.modules:
-            del sys.modules["phonebot.pipeline.transcribe"]
+        sys.modules.pop("phonebot.pipeline.transcribe", None)
 
 
 def test_concurrency_env_override(monkeypatch):
     """Setting DEEPGRAM_CONCURRENCY=10 changes the semaphore limit."""
     monkeypatch.setenv("DEEPGRAM_CONCURRENCY", "10")
 
-    if "phonebot.pipeline.transcribe" in sys.modules:
-        del sys.modules["phonebot.pipeline.transcribe"]
-
-    from phonebot.pipeline import transcribe as t
+    sys.modules.pop("phonebot.pipeline.transcribe", None)
+    import phonebot.pipeline.transcribe as t  # noqa: PLC0415
 
     importlib.reload(t)
     assert t.CONCURRENCY == 10
 
-    # Cleanup
-    del sys.modules["phonebot.pipeline.transcribe"]
+    # Cleanup for other tests
+    sys.modules.pop("phonebot.pipeline.transcribe", None)
