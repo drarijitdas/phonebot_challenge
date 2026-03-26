@@ -92,7 +92,7 @@ Each task was committed atomically:
 1. **Task 1: Initialize uv project and create package structure** - `1df96b8` (chore)
 2. **Task 2: Create CallerInfo Pydantic model and CLI entrypoint** - `56dd1b7` (feat)
 
-**Plan metadata:** (to be set after final commit)
+**Plan metadata:** `466df6f` (docs: complete foundation plan 01)
 
 ## Files Created/Modified
 - `pyproject.toml` - PEP 621 config with uv/hatchling build, Python >=3.13, all runtime and dev deps
@@ -131,6 +131,19 @@ None - no external service configuration required. (API keys will be needed in P
 - Project scaffold complete — ready for Plan 01-02 (evaluation harness)
 - All package imports verified working: `import phonebot`, `from phonebot.models import CallerInfo`, `from phonebot.models.caller_info import CallerInfo`
 - uv.lock ensures reproducible installs for all subsequent phases
+
+## Self-Check: PASSED
+
+- pyproject.toml: FOUND
+- run.py: FOUND
+- src/phonebot/__init__.py: FOUND
+- src/phonebot/models/caller_info.py: FOUND
+- .env.example: FOUND
+- .gitignore: FOUND
+- uv.lock: FOUND
+- .planning/phases/01-foundation/01-01-SUMMARY.md: FOUND
+- Commit 1df96b8: FOUND
+- Commit 56dd1b7: FOUND
 
 ---
 *Phase: 01-foundation*
