@@ -23,10 +23,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Evaluation
 
-- [ ] **EVAL-01**: Evaluation harness computes per-field accuracy against ground truth for all 30 recordings
-- [ ] **EVAL-02**: Evaluation supports multiple acceptable values per field (ground truth arrays)
-- [ ] **EVAL-03**: Phone numbers are normalized via `phonenumbers` library (E.164) before comparison
-- [ ] **EVAL-04**: Unicode normalization (NFC) and case-insensitive comparison for name/email fields
+- [x] **EVAL-01**: Evaluation harness computes per-field accuracy against ground truth for all 30 recordings
+- [x] **EVAL-02**: Evaluation supports multiple acceptable values per field (ground truth arrays)
+- [x] **EVAL-03**: Phone numbers are normalized via `phonenumbers` library (E.164) before comparison
+- [x] **EVAL-04**: Unicode normalization (NFC) and case-insensitive comparison for name/email fields
 
 ### Observability
 
@@ -92,10 +92,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
-| EVAL-01 | Phase 1 | Pending |
-| EVAL-02 | Phase 1 | Pending |
-| EVAL-03 | Phase 1 | Pending |
-| EVAL-04 | Phase 1 | Pending |
+| EVAL-01 | Phase 1 | Complete |
+| EVAL-02 | Phase 1 | Complete |
+| EVAL-03 | Phase 1 | Complete |
+| EVAL-04 | Phase 1 | Complete |
 | STT-01 | Phase 2 | Pending |
 | STT-02 | Phase 2 | Pending |
 | STT-03 | Phase 2 | Pending |

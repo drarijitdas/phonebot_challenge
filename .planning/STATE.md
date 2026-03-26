@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-foundation/01-01-PLAN.md
-last_updated: "2026-03-26T21:52:42.006Z"
+status: verifying
+stopped_at: Completed 01-foundation/01-02-PLAN.md
+last_updated: "2026-03-26T21:58:38.205Z"
 last_activity: 2026-03-26
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 Phase: 01 (foundation) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-26
 
 Progress: [░░░░░░░░░░] 0%
@@ -48,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 3 | 2 tasks | 13 files |
+| Phase 01-foundation P02 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,9 @@ Recent decisions affecting current work:
 - Pre-roadmap: EXT-04 (retry loop) deferred to Phase 7 — validates prompt quality with a clean graph before adding retry complexity
 - Pre-roadmap: GEPA (Phase 6) runs on best-performing model from A/B test (Phase 5) — optimize the winner, not the first model tried
 - [Phase 01-foundation]: argparse + Rich Console for CLI (no Typer) per D-04; CallerInfo docstring is the LLM system prompt per D-11
+- [Phase 01-foundation]: Both sides normalized in matches_field to prevent asymmetric phone comparison bugs
+- [Phase 01-foundation]: casefold() over lower() for German eszett handling in normalize_text
+- [Phase 01-foundation]: compute_metrics accepts CallerInfo objects via model_dump() check for forward-compatibility
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T21:52:42.002Z
-Stopped at: Completed 01-foundation/01-01-PLAN.md
+Last session: 2026-03-26T21:58:38.202Z
+Stopped at: Completed 01-foundation/01-02-PLAN.md
 Resume file: None

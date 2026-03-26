@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 1/2 plans executed
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold, CallerInfo model, and CLI entrypoint
-- [ ] 01-02-PLAN.md — Evaluation harness with E.164 normalization, multi-value support, and tests
+- [x] 01-02-PLAN.md — Evaluation harness with E.164 normalization, multi-value support, and tests
 
 ### Phase 2: Transcription
 **Goal**: All 30 German WAV recordings are transcribed via Deepgram Nova-3, cached to disk, and smart_format behavior on German spoken-form phone/email tokens is documented
