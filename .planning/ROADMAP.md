@@ -32,7 +32,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Running `uv run python -m evaluation.metrics` against `data/ground_truth.json` prints per-field accuracy for a set of mock results (showing 0% baseline)
   4. Phone numbers in evaluation output are normalized to E.164 via `phonenumbers` before comparison — a correct extraction with different formatting scores as correct
   5. Multi-value ground truth fields (e.g., "Lisa Marie" or "Lisa-Marie") are handled — either acceptable value scores as correct
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, CallerInfo model, and CLI entrypoint
+- [ ] 01-02-PLAN.md — Evaluation harness with E.164 normalization, multi-value support, and tests
 
 ### Phase 2: Transcription
 **Goal**: All 30 German WAV recordings are transcribed via Deepgram Nova-3, cached to disk, and smart_format behavior on German spoken-form phone/email tokens is documented
@@ -106,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/2 | Planning complete | - |
 | 2. Transcription | 0/TBD | Not started | - |
 | 3. Extraction Pipeline | 0/TBD | Not started | - |
 | 4. Observability | 0/TBD | Not started | - |
