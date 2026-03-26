@@ -27,7 +27,8 @@ Accurate extraction of caller contact information from German phone bot recordin
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- [x] Pydantic BaseModel prompting system — Validated in Phase 1: Foundation
+- [x] Evaluation against ground truth with per-entity accuracy — Validated in Phase 1: Foundation
 
 ### Active
 
@@ -36,11 +37,9 @@ Accurate extraction of caller contact information from German phone bot recordin
 - [ ] Transcribe 30 German WAV recordings via Deepgram Nova-3
 - [ ] Extract first_name, last_name, email, phone_number from transcripts
 - [ ] LangGraph pipeline orchestration
-- [ ] Pydantic BaseModel prompting system
 - [ ] Multi-model support for A/B comparison
 - [ ] GEPA prompt optimization
 - [ ] Arize Phoenix observability and tracing
-- [ ] Evaluation against ground truth with per-entity accuracy
 
 ### Out of Scope
 
@@ -97,4 +96,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-26 after milestone v1.0 initialization*
+*Last updated: 2026-03-26 after Phase 1 (Foundation) completion — project scaffold, CallerInfo model, evaluation harness with 30 passing tests*
