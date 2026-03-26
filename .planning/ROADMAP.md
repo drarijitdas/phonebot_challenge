@@ -46,7 +46,10 @@ Plans:
   2. Re-running the pipeline does not make Deepgram API calls when transcript cache files exist
   3. At least 5 transcript files have been manually reviewed and a written note exists documenting whether smart_format produced formatted or spoken-form phone/email output
   4. The spoken-form behavior decision (e.g., "null zwei null eins..." vs "0201...") is documented and feeds directly into Phase 3 extraction prompt design
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 02-01-PLAN.md — Install deepgram-sdk, create async transcription module with JSON caching and unit tests
+- [ ] 02-02-PLAN.md — Run live transcription on 30 recordings, generate smart_format analysis report
 **UI hint**: no
 
 ### Phase 3: Extraction Pipeline
@@ -109,8 +112,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/2 | In Progress|  |
-| 2. Transcription | 0/TBD | Not started | - |
+| 1. Foundation | 2/2 | Complete |  |
+| 2. Transcription | 0/2 | Planned | - |
 | 3. Extraction Pipeline | 0/TBD | Not started | - |
 | 4. Observability | 0/TBD | Not started | - |
 | 5. Model A/B Testing | 0/TBD | Not started | - |
