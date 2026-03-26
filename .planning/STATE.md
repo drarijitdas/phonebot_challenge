@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-26T23:21:23.587Z"
+status: verifying
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-26T23:49:41.864Z"
 last_activity: 2026-03-26
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 Phase: 02 (transcription) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-26
 
 Progress: [░░░░░░░░░░] 0%
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-foundation P01 | 3 | 2 tasks | 13 files |
 | Phase 01-foundation P02 | 2 | 2 tasks | 3 files |
 | Phase 02-transcription P01 | 15m | 1 tasks | 5 files |
+| Phase 02-transcription P02 | prior session + checkpoint approval | 2 tasks | 32 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: casefold() over lower() for German eszett handling in normalize_text
 - [Phase 01-foundation]: compute_metrics accepts CallerInfo objects via model_dump() check for forward-compatibility
 - [Phase 02-transcription]: deepgram-sdk v6 uses direct kwargs on transcribe_file() with no PrerecordedOptions; response.model_dump_json() replaces response.to_json()
+- [Phase 02-transcription]: smart_format for German (language=de) activates punctuation/paragraphs only — phone numeral conversion and email assembly are English-only features; extraction prompts must handle spoken-form unconditionally
+- [Phase 02-transcription]: Diarization unreliable in sampled recordings — single speaker label returned for all 8 sampled calls; extraction prompts must not rely on speaker labels
 
 ### Pending Todos
 
@@ -80,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T23:21:23.584Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-26T23:49:41.861Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Transcription
 
-- [ ] **STT-01**: Pipeline transcribes all 30 German WAV recordings via Deepgram Nova-3 with `language="de"`
-- [ ] **STT-02**: Pipeline verifies smart_format behavior on German and documents which formatters activate
-- [ ] **STT-03**: Transcripts are cached to disk to avoid redundant Deepgram API calls during iteration
+- [x] **STT-01**: Pipeline transcribes all 30 German WAV recordings via Deepgram Nova-3 with `language="de"`
+- [x] **STT-02**: Pipeline verifies smart_format behavior on German and documents which formatters activate
+- [x] **STT-03**: Transcripts are cached to disk to avoid redundant Deepgram API calls during iteration
 
 ### Extraction
 
@@ -96,9 +96,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVAL-02 | Phase 1 | Complete |
 | EVAL-03 | Phase 1 | Complete |
 | EVAL-04 | Phase 1 | Complete |
-| STT-01 | Phase 2 | Pending |
-| STT-02 | Phase 2 | Pending |
-| STT-03 | Phase 2 | Pending |
+| STT-01 | Phase 2 | Complete |
+| STT-02 | Phase 2 | Complete |
+| STT-03 | Phase 2 | Complete |
 | EXT-01 | Phase 3 | Pending |
 | EXT-02 | Phase 3 | Pending |
 | EXT-03 | Phase 3 | Pending |
