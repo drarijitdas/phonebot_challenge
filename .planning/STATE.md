@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-03-27T22:49:07.866Z"
+stopped_at: Completed 06-prompt-optimization 06-01-PLAN.md
+last_updated: "2026-03-27T23:42:01.006Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 57
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accurate extraction of caller contact information from German phone bot recordings
-**Current focus:** Phase 05 — model-a-b-testing
+**Current focus:** Phase 06 — prompt-optimization
 
 ## Current Position
 
-Phase: 6
-Plan: Not started
+Phase: 06 (prompt-optimization) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-03-27
 
@@ -56,6 +56,7 @@ Progress: [████████░░] 57%
 | Phase 04-observability P01 | 7m | 2 tasks | 8 files |
 | Phase 04-observability P02 | 10m | 2 tasks | 0 files |
 | Phase 05-model-a-b-testing P01 | 6m 10s | 2 tasks | 9 files |
+| Phase 06-prompt-optimization P01 | 3m | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 05-model-a-b-testing]: run.py output path now derived as outputs/results_{model_alias}.json for per-model result isolation
 - [Phase 05-model-a-b-testing]: compare.py is standalone (not a flag on run.py) per D-09 — clean separation between pipeline runs and comparison display
 - [Phase 05-model-a-b-testing]: build_comparison() handles N models (not hardcoded to 2) — Pitfall 6 from RESEARCH.md avoided
+- [Phase 06-prompt-optimization]: build_caller_info_model() creates a new class per call for GEPA iteration isolation
+- [Phase 06-prompt-optimization]: confidence field excluded from JSON optimization surface (D-13) — factory always injects it
+- [Phase 06-prompt-optimization]: _CALLER_INFO_MODEL lazy-loaded from extraction_v1.json — avoids module-level I/O at import time
 
 ### Pending Todos
 
@@ -102,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T22:49:07.858Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-prompt-optimization/06-CONTEXT.md
+Last session: 2026-03-27T23:42:01.003Z
+Stopped at: Completed 06-prompt-optimization 06-01-PLAN.md
+Resume file: None

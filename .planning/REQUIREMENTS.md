@@ -41,7 +41,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Prompt Optimization
 
 - [ ] **OPT-01**: GEPA optimizes extraction prompts offline against ground truth with train/validation split
-- [ ] **OPT-02**: Optimized prompt is externalized to file and loaded at pipeline startup
+- [x] **OPT-02**: Optimized prompt is externalized to file and loaded at pipeline startup
 
 ### Infrastructure
 
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AB-01 | Phase 5 | Complete |
 | AB-02 | Phase 5 | Pending |
 | OPT-01 | Phase 6 | Pending |
-| OPT-02 | Phase 6 | Pending |
+| OPT-02 | Phase 6 | Complete |
 | EXT-04 | Phase 7 | Pending |
 | QUAL-02 | Phase 7 | Pending |
 

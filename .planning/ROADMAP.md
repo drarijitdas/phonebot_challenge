@@ -102,9 +102,9 @@ Plans:
   1. `src/phonebot/prompts/extraction_v1.json` exists and the pipeline loads it at startup instead of an inline string
   2. GEPA runs on a 20-recording training subset with a 10-recording held-out validation set
   3. Running the pipeline with the GEPA-optimized prompt produces a measurably different (ideally higher) accuracy score than the Phase 3 baseline — delta is documented
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 06-01-PLAN.md — Prompt externalization: export v1 JSON, build_caller_info_model factory, wire extract_node to dynamic model
+- [x] 06-01-PLAN.md — Prompt externalization: export v1 JSON, build_caller_info_model factory, wire extract_node to dynamic model
 - [ ] 06-02-PLAN.md — GEPA optimization: install gepa, custom adapter, optimize.py script, accuracy delta checkpoint
 
 ### Phase 7: Hardening
@@ -129,5 +129,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Extraction Pipeline | 2/2 | Complete |  |
 | 4. Observability | 2/2 | Complete   | 2026-03-27 |
 | 5. Model A/B Testing | 2/2 | Complete   | 2026-03-27 |
-| 6. Prompt Optimization | 0/2 | Not started | - |
+| 6. Prompt Optimization | 1/2 | In Progress|  |
 | 7. Hardening | 0/TBD | Not started | - |
