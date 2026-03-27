@@ -30,6 +30,18 @@ packages = ["src/phonebot"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+filterwarnings = [
+    # ldap3 2.9.1 (latest) uses deprecated pyasn1 names — upstream issue
+    "ignore:tagMap is deprecated:DeprecationWarning:ldap3",
+    "ignore:typeMap is deprecated:DeprecationWarning:ldap3",
+    # arize-phoenix 13.19.0 (latest) internal deprecations — upstream issue
+    "ignore:The phoenix.evals.templating module is deprecated:DeprecationWarning:phoenix",
+    "ignore:Passing types to.*strawberry.union.*is deprecated:DeprecationWarning:phoenix",
+    # strawberry-graphql pinned by arize-phoenix, can't upgrade — upstream issue
+    "ignore:The 'lia' package has been renamed:DeprecationWarning:strawberry",
+    # pydantic json_encoders used by Phoenix internals — upstream issue
+    "ignore:.*json_encoders.*is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
+]
 
 [dependency-groups]
 dev = [

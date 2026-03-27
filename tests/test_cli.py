@@ -16,14 +16,25 @@ def test_help_exits_zero():
 
 
 def test_default_args():
-    """CLI runs without arguments (uses defaults) and exits cleanly."""
+    """CLI runs without arguments (uses defaults) and exits cleanly.
+
+    Without ANTHROPIC_API_KEY, the early model validation rejects the default
+    claude model with a clear error (not a traceback). With the key, it starts
+    the pipeline normally.
+    """
+    import os
+
     result = subprocess.run(
         [sys.executable, "run.py"],
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0
-    assert "Phonebot pipeline starting" in result.stdout or result.returncode == 0
+    if os.getenv("ANTHROPIC_API_KEY"):
+        assert result.returncode == 0
+        assert "Phonebot pipeline starting" in result.stdout
+    else:
+        assert result.returncode == 1
+        assert "ANTHROPIC_API_KEY" in result.stdout
 
 
 def test_build_parser_has_all_args():

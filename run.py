@@ -44,6 +44,15 @@ async def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    # Validate model name early — fail fast with clean error before any heavy init
+    from phonebot.models.model_registry import get_model
+
+    try:
+        get_model(args.model)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        sys.exit(1)
+
     # Compute model-specific output path (D-10: results_{alias}.json)
     alias = model_alias(args.model)
     output_path = Path(f"outputs/results_{alias}.json")
