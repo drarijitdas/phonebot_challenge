@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Transcription** - All 30 German recordings transcribed, cached, and smart_format behavior documented
 - [ ] **Phase 3: Extraction Pipeline** - End-to-end extraction baseline with per-field accuracy score established
 - [x] **Phase 4: Observability** - Arize Phoenix tracing live across all pipeline nodes (completed 2026-03-27)
-- [ ] **Phase 5: Model A/B Testing** - Multi-model comparison with Phoenix trace data per model
+- [x] **Phase 5: Model A/B Testing** - Multi-model comparison with Phoenix trace data per model (completed 2026-03-27)
 - [ ] **Phase 6: Prompt Optimization** - GEPA offline optimization producing externalized, improved extraction prompt
 - [ ] **Phase 7: Hardening** - Retry loop, confidence flagging, and final submission artifacts complete
 
@@ -89,10 +89,10 @@ Plans:
   1. Running `uv run python run.py --model claude` and `uv run python run.py --model <other>` each complete without code changes
   2. Phoenix shows two sets of 30 traces tagged by model name, visually distinguishable in the dashboard
   3. A per-model accuracy comparison table is printed to console (or written to `outputs/`) showing which model performs better per field
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 05-01-PLAN.md — Model registry, extract.py wiring, and run.py output path parameterization
-- [ ] 05-02-PLAN.md — Comparison script with Rich tables and live A/B verification checkpoint
+- [x] 05-02-PLAN.md — Comparison script with Rich tables and live A/B verification checkpoint
 
 ### Phase 6: Prompt Optimization
 **Goal**: GEPA optimizes the extraction system prompt offline against ground truth and writes an improved prompt to disk that the pipeline loads at startup
@@ -125,6 +125,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Transcription | 2/2 | Complete |  |
 | 3. Extraction Pipeline | 2/2 | Complete |  |
 | 4. Observability | 2/2 | Complete   | 2026-03-27 |
-| 5. Model A/B Testing | 1/2 | In Progress|  |
+| 5. Model A/B Testing | 2/2 | Complete   | 2026-03-27 |
 | 6. Prompt Optimization | 0/TBD | Not started | - |
 | 7. Hardening | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md — model registry and pipeline wiring
-last_updated: "2026-03-27T20:34:25.685Z"
+stopped_at: Paused at 05-02 Task 2 checkpoint — compare.py built and tested, awaiting live A/B run verification
+last_updated: "2026-03-27T20:40:10.814Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 57
 ---
 
@@ -86,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 05-model-a-b-testing]: model_registry.py routes claude-* to ChatAnthropic and ollama:<model> to ChatOllama with colon-prefix convention
 - [Phase 05-model-a-b-testing]: ChatOllama uses validate_model_on_init=False to avoid live Ollama HTTP check on model object creation
 - [Phase 05-model-a-b-testing]: run.py output path now derived as outputs/results_{model_alias}.json for per-model result isolation
+- [Phase 05-model-a-b-testing]: compare.py is standalone (not a flag on run.py) per D-09 — clean separation between pipeline runs and comparison display
+- [Phase 05-model-a-b-testing]: build_comparison() handles N models (not hardcoded to 2) — Pitfall 6 from RESEARCH.md avoided
 
 ### Pending Todos
 
@@ -100,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T20:34:25.682Z
-Stopped at: Completed 05-01-PLAN.md — model registry and pipeline wiring
+Last session: 2026-03-27T20:39:59.284Z
+Stopped at: Paused at 05-02 Task 2 checkpoint — compare.py built and tested, awaiting live A/B run verification
 Resume file: None
