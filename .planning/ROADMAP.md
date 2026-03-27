@@ -89,7 +89,10 @@ Plans:
   1. Running `uv run python run.py --model claude` and `uv run python run.py --model <other>` each complete without code changes
   2. Phoenix shows two sets of 30 traces tagged by model name, visually distinguishable in the dashboard
   3. A per-model accuracy comparison table is printed to console (or written to `outputs/`) showing which model performs better per field
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — Model registry, extract.py wiring, and run.py output path parameterization
+- [ ] 05-02-PLAN.md — Comparison script with Rich tables and live A/B verification checkpoint
 
 ### Phase 6: Prompt Optimization
 **Goal**: GEPA optimizes the extraction system prompt offline against ground truth and writes an improved prompt to disk that the pipeline loads at startup
@@ -122,6 +125,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Transcription | 2/2 | Complete |  |
 | 3. Extraction Pipeline | 2/2 | Complete |  |
 | 4. Observability | 2/2 | Complete   | 2026-03-27 |
-| 5. Model A/B Testing | 0/TBD | Not started | - |
+| 5. Model A/B Testing | 0/2 | Not started | - |
 | 6. Prompt Optimization | 0/TBD | Not started | - |
 | 7. Hardening | 0/TBD | Not started | - |
