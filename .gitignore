@@ -15,3 +15,6 @@ build/
 
 # Outputs
 outputs/
+
+# Phoenix persistent trace storage
+.phoenix/
