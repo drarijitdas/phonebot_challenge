@@ -99,10 +99,13 @@ Plans:
 **Depends on**: Phase 5
 **Requirements**: OPT-01, OPT-02
 **Success Criteria** (what must be TRUE):
-  1. `prompts/extraction_v1.txt` exists and the pipeline loads it at startup instead of an inline string
+  1. `src/phonebot/prompts/extraction_v1.json` exists and the pipeline loads it at startup instead of an inline string
   2. GEPA runs on a 20-recording training subset with a 10-recording held-out validation set
   3. Running the pipeline with the GEPA-optimized prompt produces a measurably different (ideally higher) accuracy score than the Phase 3 baseline — delta is documented
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 06-01-PLAN.md — Prompt externalization: export v1 JSON, build_caller_info_model factory, wire extract_node to dynamic model
+- [ ] 06-02-PLAN.md — GEPA optimization: install gepa, custom adapter, optimize.py script, accuracy delta checkpoint
 
 ### Phase 7: Hardening
 **Goal**: LangGraph retry loop handles Pydantic validation failures gracefully, low-confidence extractions are flagged, and the final submission package is complete
@@ -126,5 +129,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. Extraction Pipeline | 2/2 | Complete |  |
 | 4. Observability | 2/2 | Complete   | 2026-03-27 |
 | 5. Model A/B Testing | 2/2 | Complete   | 2026-03-27 |
-| 6. Prompt Optimization | 0/TBD | Not started | - |
+| 6. Prompt Optimization | 0/2 | Not started | - |
 | 7. Hardening | 0/TBD | Not started | - |
