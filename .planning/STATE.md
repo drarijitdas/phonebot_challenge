@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-03-27T19:58:22.283Z"
+status: executing
+stopped_at: Completed 05-01-PLAN.md — model registry and pipeline wiring
+last_updated: "2026-03-27T20:34:25.685Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_plans: 10
+  completed_plans: 9
   percent: 57
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accurate extraction of caller contact information from German phone bot recordings
-**Current focus:** Phase 05 — model A/B testing
+**Current focus:** Phase 05 — model-a-b-testing
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Phase complete — ready for Phase 05
+Phase: 05 (model-a-b-testing) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [████████░░] 57%
@@ -55,6 +55,7 @@ Progress: [████████░░] 57%
 | Phase 03-extraction-pipeline P02 | ~4m | 2 tasks | 1 file |
 | Phase 04-observability P01 | 7m | 2 tasks | 8 files |
 | Phase 04-observability P02 | 10m | 2 tasks | 0 files |
+| Phase 05-model-a-b-testing P01 | 6m 10s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 04-observability]: Patch phoenix.otel.register at source in tests so importlib.reload picks up mock — patch location matters when module re-executes 'from X import Y' on reload
 - [Phase 04-observability]: using_attributes() placed inside process_one() not outer run_pipeline() scope — anchors concurrent asyncio.gather tasks to individual OTel contexts, prevents span bleed
 - [Phase 04-observability]: Phoenix tracing confirmed working end-to-end: 30 traces, correct spans, prompt_version tag — Phase 4 gate passed
+- [Phase 05-model-a-b-testing]: model_registry.py routes claude-* to ChatAnthropic and ollama:<model> to ChatOllama with colon-prefix convention
+- [Phase 05-model-a-b-testing]: ChatOllama uses validate_model_on_init=False to avoid live Ollama HTTP check on model object creation
+- [Phase 05-model-a-b-testing]: run.py output path now derived as outputs/results_{model_alias}.json for per-model result isolation
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T19:58:22.273Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-model-a-b-testing/05-UI-SPEC.md
+Last session: 2026-03-27T20:34:25.682Z
+Stopped at: Completed 05-01-PLAN.md — model registry and pipeline wiring
+Resume file: None

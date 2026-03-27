@@ -35,7 +35,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Model Comparison
 
-- [ ] **AB-01**: Pipeline supports swappable LLM backends (at minimum Claude Sonnet 4.6 + one open-source model)
+- [x] **AB-01**: Pipeline supports swappable LLM backends (at minimum Claude Sonnet 4.6 + one open-source model)
 - [ ] **AB-02**: A/B test results are visible in Phoenix with per-model accuracy comparison
 
 ### Prompt Optimization
@@ -106,7 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-01 | Phase 3 | Complete |
 | OBS-01 | Phase 4 | Complete |
 | OBS-02 | Phase 4 | Complete |
-| AB-01 | Phase 5 | Pending |
+| AB-01 | Phase 5 | Complete |
 | AB-02 | Phase 5 | Pending |
 | OPT-01 | Phase 6 | Pending |
 | OPT-02 | Phase 6 | Pending |
