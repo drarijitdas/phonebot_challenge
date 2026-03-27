@@ -75,9 +75,9 @@ Plans:
   1. Phoenix UI shows a "phonebot-extraction" project with 30 independent traces after a full pipeline run
   2. Each trace has distinct spans for the transcription node and the extraction node, with LLM latency visible
   3. Traces are tagged with a prompt version identifier — re-running with a different prompt produces traces with a different version tag
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 04-01-PLAN.md — Install Phoenix deps, create observability module, wire run.py and extract.py with tracing
+- [x] 04-01-PLAN.md — Install Phoenix deps, create observability module, wire run.py and extract.py with tracing
 - [ ] 04-02-PLAN.md — Run full pipeline and verify 30 traces in Phoenix UI (checkpoint)
 **UI hint**: yes
 
@@ -121,7 +121,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 2/2 | Complete |  |
 | 2. Transcription | 2/2 | Complete |  |
 | 3. Extraction Pipeline | 2/2 | Complete |  |
-| 4. Observability | 0/2 | Planned | - |
+| 4. Observability | 1/2 | In Progress|  |
 | 5. Model A/B Testing | 0/TBD | Not started | - |
 | 6. Prompt Optimization | 0/TBD | Not started | - |
 | 7. Hardening | 0/TBD | Not started | - |

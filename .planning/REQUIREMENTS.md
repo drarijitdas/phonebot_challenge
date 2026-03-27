@@ -30,8 +30,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Observability
 
-- [ ] **OBS-01**: Arize Phoenix traces all LangGraph pipeline nodes with span-level visibility
-- [ ] **OBS-02**: Traces are tagged with prompt version for comparison across iterations
+- [x] **OBS-01**: Arize Phoenix traces all LangGraph pipeline nodes with span-level visibility
+- [x] **OBS-02**: Traces are tagged with prompt version for comparison across iterations
 
 ### Model Comparison
 
@@ -104,8 +104,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXT-03 | Phase 3 | Complete |
 | EXT-05 | Phase 3 | Complete |
 | QUAL-01 | Phase 3 | Complete |
-| OBS-01 | Phase 4 | Pending |
-| OBS-02 | Phase 4 | Pending |
+| OBS-01 | Phase 4 | Complete |
+| OBS-02 | Phase 4 | Complete |
 | AB-01 | Phase 5 | Pending |
 | AB-02 | Phase 5 | Pending |
 | OPT-01 | Phase 6 | Pending |
