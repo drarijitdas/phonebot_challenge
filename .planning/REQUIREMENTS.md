@@ -15,11 +15,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Extraction
 
-- [ ] **EXT-01**: Pipeline extracts first_name, last_name, email, phone_number from each transcript via LLM structured output
-- [ ] **EXT-02**: Extraction uses Pydantic BaseModel with class docstring as system prompt and Field descriptions as per-field extraction instructions
-- [ ] **EXT-03**: Pipeline is orchestrated via LangGraph with typed state (transcribe -> extract -> validate flow)
+- [x] **EXT-01**: Pipeline extracts first_name, last_name, email, phone_number from each transcript via LLM structured output
+- [x] **EXT-02**: Extraction uses Pydantic BaseModel with class docstring as system prompt and Field descriptions as per-field extraction instructions
+- [x] **EXT-03**: Pipeline is orchestrated via LangGraph with typed state (transcribe -> extract -> validate flow)
 - [ ] **EXT-04**: LangGraph retry loop re-prompts LLM on Pydantic validation failure with error context
-- [ ] **EXT-05**: Extraction prompt explicitly handles German spoken-form phone numbers and email addresses
+- [x] **EXT-05**: Extraction prompt explicitly handles German spoken-form phone numbers and email addresses
 
 ### Evaluation
 
@@ -50,7 +50,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Quality
 
-- [ ] **QUAL-01**: Extraction returns `None` (not hallucinated values) when field is not present in transcript
+- [x] **QUAL-01**: Extraction returns `None` (not hallucinated values) when field is not present in transcript
 - [ ] **QUAL-02**: Low-confidence extractions are flagged with uncertainty metadata
 
 ## Future Requirements
@@ -99,11 +99,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STT-01 | Phase 2 | Complete |
 | STT-02 | Phase 2 | Complete |
 | STT-03 | Phase 2 | Complete |
-| EXT-01 | Phase 3 | Pending |
-| EXT-02 | Phase 3 | Pending |
-| EXT-03 | Phase 3 | Pending |
-| EXT-05 | Phase 3 | Pending |
-| QUAL-01 | Phase 3 | Pending |
+| EXT-01 | Phase 3 | Complete |
+| EXT-02 | Phase 3 | Complete |
+| EXT-03 | Phase 3 | Complete |
+| EXT-05 | Phase 3 | Complete |
+| QUAL-01 | Phase 3 | Complete |
 | OBS-01 | Phase 4 | Pending |
 | OBS-02 | Phase 4 | Pending |
 | AB-01 | Phase 5 | Pending |
