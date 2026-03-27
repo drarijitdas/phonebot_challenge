@@ -62,7 +62,10 @@ Plans:
   3. `CallerInfo` field descriptions explicitly handle German spoken-form phone numbers and email addresses (e.g., "null neun null", "punkt", "at")
   4. Fields absent from a transcript return `null` (not a hallucinated value) — verified against at least one recording where a field is known to be missing
   5. Per-field accuracy report prints to console: `first_name: X%, last_name: X%, email: X%, phone_number: X%`
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — Install deps, enhance CallerInfo field descriptions, create LangGraph extract module and tests
+- [ ] 03-02-PLAN.md — Wire run.py with pipeline invocation, auto-evaluation, and Rich accuracy table
 
 ### Phase 4: Observability
 **Goal**: Arize Phoenix is live and traces all 30 pipeline runs with span-level visibility for every LangGraph node
@@ -113,8 +116,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete |  |
-| 2. Transcription | 1/2 | In Progress|  |
-| 3. Extraction Pipeline | 0/TBD | Not started | - |
+| 2. Transcription | 2/2 | Complete |  |
+| 3. Extraction Pipeline | 0/2 | Not started | - |
 | 4. Observability | 0/TBD | Not started | - |
 | 5. Model A/B Testing | 0/TBD | Not started | - |
 | 6. Prompt Optimization | 0/TBD | Not started | - |
