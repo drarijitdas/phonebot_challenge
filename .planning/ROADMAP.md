@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Foundation** - Project scaffold, Pydantic schema, and evaluation harness ready before any pipeline run
 - [ ] **Phase 2: Transcription** - All 30 German recordings transcribed, cached, and smart_format behavior documented
 - [ ] **Phase 3: Extraction Pipeline** - End-to-end extraction baseline with per-field accuracy score established
-- [ ] **Phase 4: Observability** - Arize Phoenix tracing live across all pipeline nodes
+- [x] **Phase 4: Observability** - Arize Phoenix tracing live across all pipeline nodes (completed 2026-03-27)
 - [ ] **Phase 5: Model A/B Testing** - Multi-model comparison with Phoenix trace data per model
 - [ ] **Phase 6: Prompt Optimization** - GEPA offline optimization producing externalized, improved extraction prompt
 - [ ] **Phase 7: Hardening** - Retry loop, confidence flagging, and final submission artifacts complete
@@ -75,10 +75,10 @@ Plans:
   1. Phoenix UI shows a "phonebot-extraction" project with 30 independent traces after a full pipeline run
   2. Each trace has distinct spans for the transcription node and the extraction node, with LLM latency visible
   3. Traces are tagged with a prompt version identifier — re-running with a different prompt produces traces with a different version tag
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 04-01-PLAN.md — Install Phoenix deps, create observability module, wire run.py and extract.py with tracing
-- [ ] 04-02-PLAN.md — Run full pipeline and verify 30 traces in Phoenix UI (checkpoint)
+- [x] 04-02-PLAN.md — Run full pipeline and verify 30 traces in Phoenix UI (checkpoint)
 **UI hint**: yes
 
 ### Phase 5: Model A/B Testing
@@ -121,7 +121,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Foundation | 2/2 | Complete |  |
 | 2. Transcription | 2/2 | Complete |  |
 | 3. Extraction Pipeline | 2/2 | Complete |  |
-| 4. Observability | 1/2 | In Progress|  |
+| 4. Observability | 2/2 | Complete   | 2026-03-27 |
 | 5. Model A/B Testing | 0/TBD | Not started | - |
 | 6. Prompt Optimization | 0/TBD | Not started | - |
 | 7. Hardening | 0/TBD | Not started | - |
