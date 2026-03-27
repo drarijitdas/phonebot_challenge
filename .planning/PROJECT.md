@@ -33,11 +33,11 @@ Accurate extraction of caller contact information from German phone bot recordin
 - [x] Extract first_name, last_name, email, phone_number from transcripts — Validated in Phase 3: Extraction Pipeline (82% baseline)
 - [x] LangGraph pipeline orchestration — Validated in Phase 3: Extraction Pipeline
 - [x] Arize Phoenix observability and tracing — Validated in Phase 4: Observability (30 traces with span-level visibility)
+- [x] Multi-model support for A/B comparison — Validated in Phase 5: Model A/B Testing (Claude + Ollama registry, compare.py with Rich tables, Claude 83% winner)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
-- [ ] Multi-model support for A/B comparison
 - [ ] GEPA prompt optimization
 
 ### Out of Scope
@@ -95,4 +95,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 4 (Observability) completion — Phoenix tracing live with 30 traces, span-level visibility, and prompt_version tagging. Extraction baseline at 82% overall accuracy.*
+*Last updated: 2026-03-27 after Phase 5 (Model A/B Testing) completion — model registry routes claude-*/ollama:* to LangChain backends, compare.py produces Rich comparison tables, Claude Sonnet 4.6 wins at 83% overall accuracy. Phoenix trace tagging pending human visual verification.*
