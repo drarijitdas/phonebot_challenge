@@ -13,7 +13,6 @@ def test_help_exits_zero():
     assert result.returncode == 0
     assert "--model" in result.stdout
     assert "--recordings-dir" in result.stdout
-    assert "--output" in result.stdout
 
 
 def test_default_args():
@@ -36,10 +35,10 @@ def test_build_parser_has_all_args():
     args = parser.parse_args([])
     assert hasattr(args, "model")
     assert hasattr(args, "recordings_dir")
-    assert hasattr(args, "output")
+    # --output is no longer an argument (AB-01: path computed from model alias)
+    assert not hasattr(args, "output"), "--output should not exist; path computed from model alias"
     assert args.model == "claude-sonnet-4-6"
     assert args.recordings_dir == "data/recordings/"
-    assert args.output == "outputs/results.json"
 
 
 # ---------------------------------------------------------------------------
@@ -77,3 +76,15 @@ def test_help_includes_prompt_version():
     )
     assert result.returncode == 0
     assert "--prompt-version" in result.stdout, "--prompt-version not found in --help output"
+
+
+# ---------------------------------------------------------------------------
+# AB-01: model_alias in output path
+# ---------------------------------------------------------------------------
+
+
+def test_model_alias_in_output_path():
+    """AB-01: run.py uses model_alias to compute output path."""
+    from phonebot.models.model_registry import model_alias
+    assert model_alias("claude-sonnet-4-6") == "claude-sonnet-4-6"
+    assert model_alias("ollama:llama3.2:3b") == "ollama_llama3.2_3b"

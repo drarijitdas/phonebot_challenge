@@ -228,3 +228,39 @@ async def test_missing_field_returns_null():
     assert info["first_name"] is not None, (
         "Expected first_name to be extracted ('Max'), but got None"
     )
+
+
+# ---------------------------------------------------------------------------
+# AB-01: extract_node() uses registry (not hardcoded ChatAnthropic)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_extract_node_uses_registry():
+    """AB-01: extract_node() calls get_model() from registry, not hardcoded ChatAnthropic."""
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    mock_caller_info = MagicMock()
+    mock_caller_info.model_dump.return_value = {
+        "first_name": "Test", "last_name": "User",
+        "email": None, "phone_number": None, "confidence": {},
+    }
+
+    # The structured model's ainvoke() is called as: result = await structured_model.ainvoke(...)
+    mock_structured = MagicMock()
+    mock_structured.ainvoke = AsyncMock(return_value=mock_caller_info)
+
+    mock_model = MagicMock()
+    mock_model.with_structured_output.return_value = mock_structured
+
+    with patch("phonebot.pipeline.extract.get_model", return_value=mock_model) as mock_get:
+        with patch.dict(os.environ, {"PHONEBOT_MODEL": "ollama:llama3.2:3b"}):
+            from phonebot.pipeline.extract import extract_node
+            result = await extract_node({
+                "recording_id": "test",
+                "transcript_text": "Guten Tag",
+                "caller_info": None,
+            })
+
+    mock_get.assert_called_once_with("ollama:llama3.2:3b")
+    assert result["caller_info"]["first_name"] == "Test"

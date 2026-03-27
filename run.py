@@ -11,6 +11,8 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
+from phonebot.models.model_registry import model_alias
+
 console = Console()
 
 
@@ -31,11 +33,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory containing WAV recording files",
     )
     parser.add_argument(
-        "--output",
-        default="outputs/results.json",
-        help="Path for extraction results JSON output",
-    )
-    parser.add_argument(
         "--prompt-version",
         default="v1",
         help="Prompt version tag attached to every Phoenix trace",
@@ -47,8 +44,9 @@ async def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    # Ensure output directory exists
-    output_path = Path(args.output)
+    # Compute model-specific output path (D-10: results_{alias}.json)
+    alias = model_alias(args.model)
+    output_path = Path(f"outputs/results_{alias}.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Initialize tracing BEFORE pipeline import (RESEARCH Pitfall 2 — instrumentation
@@ -63,7 +61,7 @@ async def main() -> None:
     console.print(f"Model: {args.model}")
     console.print(f"Prompt version: {args.prompt_version}")
     console.print(f"Recordings: {args.recordings_dir}")
-    console.print(f"Output: {args.output}")
+    console.print(f"Output: outputs/results_{alias}.json")
     console.print(f"[green]Tracing initialized -- project: {project_name}[/green]")
 
     # Discover recording IDs from cached transcripts
@@ -90,12 +88,13 @@ async def main() -> None:
 
     console.print(f"[green]Extraction complete in {duration:.1f}s[/green]")
 
-    # Write results.json (D-12)
+    # Write results_{alias}.json (D-10, D-12, D-13)
     payload = {
         "model": args.model,
         "prompt_version": args.prompt_version,
         "total_recordings": len(results),
         "duration_seconds": round(duration, 2),
+        "avg_latency_per_recording": round(duration / len(results), 2) if results else 0,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "results": results,
     }

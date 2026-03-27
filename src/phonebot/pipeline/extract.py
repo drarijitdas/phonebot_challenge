@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Must precede langchain/langgraph imports (Pitfall 2)
 
-from langchain_anthropic import ChatAnthropic  # noqa: E402
+from phonebot.models.model_registry import get_model  # noqa: E402
 from langgraph.graph import END, START, StateGraph  # noqa: E402
 from openinference.instrumentation import using_attributes  # noqa: E402
 
@@ -53,13 +53,14 @@ async def transcribe_node(state: PipelineState) -> dict:
 async def extract_node(state: PipelineState) -> dict:
     """Extract CallerInfo from transcript text using LLM structured output.
 
-    Uses ChatAnthropic with with_structured_output(CallerInfo) to parse the
-    transcript into a typed CallerInfo instance. Model name is read from the
-    PHONEBOT_MODEL env var (set by run_pipeline before invocation).
+    Uses model registry get_model() with with_structured_output(CallerInfo) to parse
+    the transcript into a typed CallerInfo instance. Model name is read from the
+    PHONEBOT_MODEL env var (set by run_pipeline before invocation). Supports both
+    ChatAnthropic (claude-*) and ChatOllama (ollama:<model>) via the registry.
 
     Returns CallerInfo as a plain dict (model_dump()) to avoid Pitfall 1.
     """
-    model = ChatAnthropic(model=os.getenv("PHONEBOT_MODEL", "claude-sonnet-4-6"))
+    model = get_model(os.getenv("PHONEBOT_MODEL", "claude-sonnet-4-6"))
     structured_model = model.with_structured_output(CallerInfo, method="json_schema")
     result: CallerInfo = await structured_model.ainvoke(state["transcript_text"])
     return {"caller_info": result.model_dump()}
