@@ -40,3 +40,40 @@ def test_build_parser_has_all_args():
     assert args.model == "claude-sonnet-4-6"
     assert args.recordings_dir == "data/recordings/"
     assert args.output == "outputs/results.json"
+
+
+# ---------------------------------------------------------------------------
+# OBS-02: --prompt-version CLI argument (Phase 4)
+# ---------------------------------------------------------------------------
+
+
+def test_prompt_version_arg():
+    """build_parser() returns parser that accepts --prompt-version with default 'v1'."""
+    sys.path.insert(0, ".")
+    from run import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args([])
+    assert hasattr(args, "prompt_version"), "--prompt-version arg missing from parser"
+    assert args.prompt_version == "v1", f"Expected default 'v1', got '{args.prompt_version}'"
+
+
+def test_prompt_version_arg_custom():
+    """build_parser().parse_args(['--prompt-version', 'v2']) has prompt_version='v2'."""
+    sys.path.insert(0, ".")
+    from run import build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(["--prompt-version", "v2"])
+    assert args.prompt_version == "v2", f"Expected 'v2', got '{args.prompt_version}'"
+
+
+def test_help_includes_prompt_version():
+    """--prompt-version appears in --help output."""
+    result = subprocess.run(
+        [sys.executable, "run.py", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "--prompt-version" in result.stdout, "--prompt-version not found in --help output"

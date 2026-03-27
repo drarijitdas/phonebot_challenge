@@ -19,6 +19,7 @@ load_dotenv()  # Must precede langchain/langgraph imports (Pitfall 2)
 
 from langchain_anthropic import ChatAnthropic  # noqa: E402
 from langgraph.graph import END, START, StateGraph  # noqa: E402
+from openinference.instrumentation import using_attributes  # noqa: E402
 
 from phonebot.models.caller_info import CallerInfo  # noqa: E402
 from phonebot.pipeline.transcribe import get_transcript_text  # noqa: E402
@@ -82,16 +83,21 @@ async def run_pipeline(
     recording_ids: list[str],
     model_name: str = "claude-sonnet-4-6",
     concurrency: int = 5,
+    prompt_version: str = "v1",
 ) -> list[dict]:
     """Run extraction pipeline concurrently over a list of recording IDs.
 
     Sets PHONEBOT_MODEL env var so extract_node picks up the model name.
     Bounded concurrency via asyncio.Semaphore (also respects EXTRACT_CONCURRENCY env var).
+    Each ainvoke() is wrapped with using_attributes() inside process_one() to tag
+    concurrent traces with recording_id, model, prompt_version, and run_timestamp
+    (RESEARCH Pattern 2, Pitfall 3 — prevents context bleed across concurrent traces).
 
     Args:
         recording_ids: List of recording IDs (e.g. ["call_01", "call_02", ...])
         model_name: Anthropic model name to use for extraction.
         concurrency: Max concurrent pipeline invocations.
+        prompt_version: Prompt version tag attached to every Phoenix trace.
 
     Returns:
         List of dicts with keys: id, caller_info, model, timestamp.
@@ -102,13 +108,24 @@ async def run_pipeline(
 
     async def process_one(recording_id: str) -> dict:
         async with semaphore:
-            final_state = await PIPELINE.ainvoke(
-                {
+            # using_attributes() MUST be inside process_one(), not at outer scope
+            # (RESEARCH Pitfall 3 — prevents context bleed across concurrent ainvoke() calls)
+            with using_attributes(
+                metadata={
                     "recording_id": recording_id,
-                    "transcript_text": None,
-                    "caller_info": None,
-                }
-            )
+                    "model": model_name,
+                    "prompt_version": prompt_version,
+                    "run_timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+                prompt_template_version=prompt_version,
+            ):
+                final_state = await PIPELINE.ainvoke(
+                    {
+                        "recording_id": recording_id,
+                        "transcript_text": None,
+                        "caller_info": None,
+                    }
+                )
         return {
             "id": recording_id,
             "caller_info": final_state["caller_info"],

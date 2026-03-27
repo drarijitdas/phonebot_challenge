@@ -2,6 +2,7 @@
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -34,6 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="outputs/results.json",
         help="Path for extraction results JSON output",
     )
+    parser.add_argument(
+        "--prompt-version",
+        default="v1",
+        help="Prompt version tag attached to every Phoenix trace",
+    )
     return parser
 
 
@@ -45,10 +51,20 @@ async def main() -> None:
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Initialize tracing BEFORE pipeline import (RESEARCH Pitfall 2 — instrumentation
+    # must be registered before LangChain modules are imported/executed).
+    from phonebot.observability import init_tracing, shutdown_tracing
+
+    phoenix_url = init_tracing()
+
+    project_name = os.getenv("PHOENIX_PROJECT", "phonebot-extraction")
+
     console.print("[bold green]Phonebot pipeline starting...[/bold green]")
     console.print(f"Model: {args.model}")
+    console.print(f"Prompt version: {args.prompt_version}")
     console.print(f"Recordings: {args.recordings_dir}")
     console.print(f"Output: {args.output}")
+    console.print(f"[green]Tracing initialized -- project: {project_name}[/green]")
 
     # Discover recording IDs from cached transcripts
     transcript_dir = Path("data/transcripts")
@@ -61,10 +77,15 @@ async def main() -> None:
     console.print(f"\n[bold]Extracting from {len(recording_ids)} recordings...[/bold]")
 
     # Run extraction pipeline (D-09: one graph invocation per recording, concurrent)
+    # Lazy import here — after init_tracing() — ensures OTEL patches are applied first.
     from phonebot.pipeline.extract import run_pipeline
 
     t0 = time.monotonic()
-    results = await run_pipeline(recording_ids, model_name=args.model)
+    results = await run_pipeline(
+        recording_ids,
+        model_name=args.model,
+        prompt_version=args.prompt_version,
+    )
     duration = time.monotonic() - t0
 
     console.print(f"[green]Extraction complete in {duration:.1f}s[/green]")
@@ -72,6 +93,7 @@ async def main() -> None:
     # Write results.json (D-12)
     payload = {
         "model": args.model,
+        "prompt_version": args.prompt_version,
         "total_recordings": len(results),
         "duration_seconds": round(duration, 2),
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -94,6 +116,13 @@ async def main() -> None:
         table.add_row(field, f"{acc:.0%}")
     table.add_row("[bold]Overall[/bold]", f"[bold]{metrics['overall']:.0%}[/bold]")
     console.print(table)
+
+    # Print trace count and Phoenix URL (D-03, D-14, UI-SPEC step 5)
+    console.print(f"\n[green]{len(results)} traces sent to Phoenix[/green]")
+    console.print(f"[green]Phoenix UI: {phoenix_url}[/green]")
+
+    # Flush all spans before process exit (RESEARCH Open Question 3)
+    shutdown_tracing()
 
 
 if __name__ == "__main__":
