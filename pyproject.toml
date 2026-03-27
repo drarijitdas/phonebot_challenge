@@ -14,6 +14,7 @@ dependencies = [
     "arize-phoenix>=13.19.0",
     "arize-phoenix-otel>=0.15.0",
     "openinference-instrumentation-langchain>=0.1.61",
+    "langchain-ollama>=1.0.1",
 ]
 
 [project.optional-dependencies]
