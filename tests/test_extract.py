@@ -264,3 +264,64 @@ async def test_extract_node_uses_registry():
 
     mock_get.assert_called_once_with("ollama:llama3.2:3b")
     assert result["caller_info"]["first_name"] == "Test"
+
+
+# ---------------------------------------------------------------------------
+# OPT-02: extract_node uses dynamic CallerInfo model when injected
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_extract_node_uses_dynamic_model():
+    """OPT-02: extract_node uses _CALLER_INFO_MODEL when set, not static CallerInfo."""
+    from typing import Optional
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from pydantic import Field, create_model
+
+    # Create a custom dynamic model with a distinct docstring
+    DynamicModel = create_model(
+        "CallerInfo",
+        first_name=(Optional[str], Field(default=None, description="custom first")),
+        last_name=(Optional[str], Field(default=None, description="custom last")),
+        email=(Optional[str], Field(default=None, description="custom email")),
+        phone_number=(Optional[str], Field(default=None, description="custom phone")),
+        confidence=(dict, Field(default_factory=dict, description="confidence")),
+    )
+    DynamicModel.__doc__ = "Custom dynamic system prompt"
+
+    mock_caller_info = MagicMock()
+    mock_caller_info.model_dump.return_value = {
+        "first_name": "Dynamic", "last_name": "Test",
+        "email": None, "phone_number": None, "confidence": {},
+    }
+
+    mock_structured = MagicMock()
+    mock_structured.ainvoke = AsyncMock(return_value=mock_caller_info)
+
+    mock_model = MagicMock()
+    mock_model.with_structured_output.return_value = mock_structured
+
+    import phonebot.pipeline.extract as extract_module
+
+    # Inject the dynamic model
+    extract_module.set_caller_info_model(DynamicModel)
+
+    try:
+        with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
+            result = await extract_module.extract_node({
+                "recording_id": "test",
+                "transcript_text": "Guten Tag",
+                "caller_info": None,
+            })
+
+        # Verify with_structured_output was called with our dynamic model, not static CallerInfo
+        call_args = mock_model.with_structured_output.call_args
+        used_model = call_args[0][0]
+        assert used_model.__doc__ == "Custom dynamic system prompt", (
+            f"extract_node did not use injected dynamic model. Got doc: {used_model.__doc__}"
+        )
+        assert result["caller_info"]["first_name"] == "Dynamic"
+    finally:
+        # Reset to None so other tests aren't affected
+        extract_module._CALLER_INFO_MODEL = None

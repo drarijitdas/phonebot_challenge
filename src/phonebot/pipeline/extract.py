@@ -23,9 +23,36 @@ from openinference.instrumentation import using_attributes  # noqa: E402
 
 from phonebot.models.caller_info import CallerInfo  # noqa: E402
 from phonebot.pipeline.transcribe import get_transcript_text  # noqa: E402
+from phonebot.prompts import build_caller_info_model  # noqa: E402
 
 EXTRACT_CONCURRENCY = int(os.getenv("EXTRACT_CONCURRENCY", "5"))
 TRANSCRIPT_DIR = Path("data/transcripts")
+
+# Dynamic CallerInfo model — loaded from prompt JSON file at startup.
+# GEPA evaluator swaps this via set_caller_info_model() between optimization iterations.
+# extract_node reads this at call time (not import time), so one compiled PIPELINE serves all iterations.
+# Per Pitfall 3: do NOT use `from phonebot.models.caller_info import CallerInfo` inside extract_node.
+_CALLER_INFO_MODEL: type | None = None
+
+
+def set_caller_info_model(model_class: type) -> None:
+    """Inject a dynamic CallerInfo model for GEPA optimization iterations.
+
+    Called by optimize.py before each run_pipeline() call to swap the prompt.
+    Called by run.py at startup to load from the --prompt-version file.
+    """
+    global _CALLER_INFO_MODEL
+    _CALLER_INFO_MODEL = model_class
+
+
+def _get_caller_info_model() -> type:
+    """Return the active CallerInfo model, loading default if not set."""
+    global _CALLER_INFO_MODEL
+    if _CALLER_INFO_MODEL is None:
+        # Load default from extraction_v1.json (per D-10)
+        default_path = Path(__file__).resolve().parent.parent / "prompts" / "extraction_v1.json"
+        _CALLER_INFO_MODEL = build_caller_info_model(default_path)
+    return _CALLER_INFO_MODEL
 
 
 class PipelineState(TypedDict):
@@ -53,16 +80,20 @@ async def transcribe_node(state: PipelineState) -> dict:
 async def extract_node(state: PipelineState) -> dict:
     """Extract CallerInfo from transcript text using LLM structured output.
 
-    Uses model registry get_model() with with_structured_output(CallerInfo) to parse
-    the transcript into a typed CallerInfo instance. Model name is read from the
-    PHONEBOT_MODEL env var (set by run_pipeline before invocation). Supports both
-    ChatAnthropic (claude-*) and ChatOllama (ollama:<model>) via the registry.
+    Uses the dynamic CallerInfo model from _get_caller_info_model() instead of
+    the static CallerInfo import. This allows GEPA's evaluator to hot-swap
+    prompt candidates without rebuilding the LangGraph pipeline (Pitfall 3).
+
+    Model name is read from the PHONEBOT_MODEL env var (set by run_pipeline before
+    invocation). Supports both ChatAnthropic (claude-*) and ChatOllama (ollama:<model>)
+    via the registry.
 
     Returns CallerInfo as a plain dict (model_dump()) to avoid Pitfall 1.
     """
     model = get_model(os.getenv("PHONEBOT_MODEL", "claude-sonnet-4-6"))
-    structured_model = model.with_structured_output(CallerInfo, method="json_schema")
-    result: CallerInfo = await structured_model.ainvoke(state["transcript_text"])
+    caller_info_cls = _get_caller_info_model()
+    structured_model = model.with_structured_output(caller_info_cls, method="json_schema")
+    result = await structured_model.ainvoke(state["transcript_text"])
     return {"caller_info": result.model_dump()}
 
 
