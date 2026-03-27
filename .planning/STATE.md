@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 03-extraction-pipeline 03-01-PLAN.md
-last_updated: "2026-03-27T10:54:18.503Z"
+status: idle
+stopped_at: Completed phase 03-extraction-pipeline (all plans)
+last_updated: "2026-03-27T11:30:00.000Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 43
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accurate extraction of caller contact information from German phone bot recordings
-**Current focus:** Phase 03 — extraction-pipeline
+**Current focus:** Phase 03 complete — next: Phase 04 (observability)
 
 ## Current Position
 
-Phase: 03 (extraction-pipeline) — EXECUTING
+Phase: 03 (extraction-pipeline) — COMPLETE
 Plan: 2 of 2
-Status: Ready to execute
+Status: All plans executed, user-approved
 Last activity: 2026-03-27
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████░░░░░░] 43%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02-transcription P01 | 15m | 1 tasks | 5 files |
 | Phase 02-transcription P02 | prior session + checkpoint approval | 2 tasks | 32 files |
 | Phase 03-extraction-pipeline P01 | 3m | 3 tasks | 5 files |
+| Phase 03-extraction-pipeline P02 | ~4m | 2 tasks | 1 file |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 03-extraction-pipeline]: PIPELINE constant: StateGraph compiled once at import time, not rebuilt per recording
 - [Phase 03-extraction-pipeline]: transcribe_node raises FileNotFoundError on cache miss; no API fallback in Phase 3
 - [Phase 03-extraction-pipeline]: asyncio_mode=auto added to pytest config for transparent pytest-asyncio async test execution
+- [Phase 03-extraction-pipeline]: run.py discovers recordings from data/transcripts/call_*.json glob, not WAV files
+- [Phase 03-extraction-pipeline]: Lazy import of run_pipeline inside main() avoids load_dotenv/langchain import-time issues
+- [Phase 03-extraction-pipeline]: Baseline accuracy: 82% overall (90% first_name, 77% last_name, 67% email, 97% phone_number)
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T10:54:18.500Z
-Stopped at: Completed 03-extraction-pipeline 03-01-PLAN.md
+Last session: 2026-03-27T11:30:00.000Z
+Stopped at: Completed phase 03-extraction-pipeline (all plans)
 Resume file: None
