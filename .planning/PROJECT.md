@@ -30,15 +30,15 @@ Accurate extraction of caller contact information from German phone bot recordin
 - [x] Pydantic BaseModel prompting system — Validated in Phase 1: Foundation
 - [x] Evaluation against ground truth with per-entity accuracy — Validated in Phase 1: Foundation
 - [x] Transcribe 30 German WAV recordings via Deepgram Nova-3 — Validated in Phase 2: Transcription
+- [x] Extract first_name, last_name, email, phone_number from transcripts — Validated in Phase 3: Extraction Pipeline (82% baseline)
+- [x] LangGraph pipeline orchestration — Validated in Phase 3: Extraction Pipeline
+- [x] Arize Phoenix observability and tracing — Validated in Phase 4: Observability (30 traces with span-level visibility)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
-- [ ] Extract first_name, last_name, email, phone_number from transcripts
-- [ ] LangGraph pipeline orchestration
 - [ ] Multi-model support for A/B comparison
 - [ ] GEPA prompt optimization
-- [ ] Arize Phoenix observability and tracing
 
 ### Out of Scope
 
@@ -75,7 +75,7 @@ Accurate extraction of caller contact information from German phone bot recordin
 | LangGraph for orchestration | Graph-based pipeline enables modular steps, retries, branching | -- Pending |
 | Pydantic BaseModel prompting | Docstrings as system prompts, field descriptions as extraction prompts — self-documenting and type-safe | -- Pending |
 | GEPA for prompt optimization | Automated prompt tuning against ground truth | -- Pending |
-| Arize Phoenix for observability | Tracing, A/B testing, prompt engineering dashboard | -- Pending |
+| Arize Phoenix for observability | Tracing, A/B testing, prompt engineering dashboard | Live — 30 traces with transcribe+extract spans, prompt_version tagging, persistent SQLite (Phase 4) |
 
 ## Evolution
 
@@ -95,4 +95,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 2 (Transcription) completion — 30 recordings transcribed via Deepgram Nova-3, cached as JSON, smart_format analysis documents spoken-form behavior for Phase 3*
+*Last updated: 2026-03-27 after Phase 4 (Observability) completion — Phoenix tracing live with 30 traces, span-level visibility, and prompt_version tagging. Extraction baseline at 82% overall accuracy.*
