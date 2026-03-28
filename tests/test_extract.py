@@ -347,33 +347,12 @@ async def test_retry_on_validation_failure():
 
     import phonebot.pipeline.extract as extract_module
 
-    from pydantic import ValidationError, create_model
-    from pydantic.fields import FieldInfo
+    from pydantic import BaseModel as PydanticBase, ValidationError as PydanticVE
 
-    # First call raises ValidationError, second call succeeds
-    call_count = 0
+    # Model that raises ValidationError on first call, succeeds on second
+    validate_count = [0]
 
-    class MockModel:
-        def model_validate(self, data):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                # Trigger a real ValidationError by passing wrong type to a strict model
-                from pydantic import BaseModel, Field as PydanticField
-                from typing import Optional as Opt
-
-                class StrictModel(BaseModel):
-                    first_name: str  # non-optional, must be string
-
-                StrictModel.model_validate({"first_name": 123})  # will raise
-            # Return successfully on second call
-
-    # Make a model class that raises on first validate call
-    validate_call_count = [0]
-
-    from pydantic import BaseModel
-
-    class FailOnceModel(BaseModel):
+    class OnceFailModel(PydanticBase):
         first_name: str = ""
         last_name: str = ""
         email: str = ""
@@ -382,17 +361,13 @@ async def test_retry_on_validation_failure():
 
         @classmethod
         def model_validate(cls, obj, **kwargs):
-            validate_call_count[0] += 1
-            if validate_call_count[0] == 1:
-                from pydantic_core import InitErrorDetails
-                from pydantic import ValidationError as VE
+            validate_count[0] += 1
+            if validate_count[0] == 1:
+                # Raise a real ValidationError by validating bad data against a strict model
+                class StrictInt(PydanticBase):
+                    value: int
 
-                raise VE.from_exception_data(
-                    title="FailOnceModel",
-                    input_type="python",
-                    input_value=obj,
-                    hide_input=False,
-                )
+                StrictInt.model_validate({"value": "not_an_int"})  # raises ValidationError
             return super().model_validate(obj, **kwargs)
 
     mock_caller_info = MagicMock()
@@ -407,41 +382,12 @@ async def test_retry_on_validation_failure():
     mock_model = MagicMock()
     mock_model.with_structured_output.return_value = mock_structured
 
-    # Patch transcribe_node to pass through (avoid file system access)
     async def mock_transcribe(state):
         return {"transcript_text": "Guten Tag, ich heiße Max."}
 
-    # Use a real ValidationError-raising model for validate_node
-    from pydantic import ValidationError as PydanticVE
-    from pydantic import BaseModel as PydanticBase
-
-    validate_count = [0]
-
-    def make_model_that_fails_once():
-        class OnceFailModel(PydanticBase):
-            first_name: str = ""
-            confidence: dict = {}
-
-            @classmethod
-            def model_validate(cls, obj, **kwargs):
-                validate_count[0] += 1
-                if validate_count[0] == 1:
-                    # Build and raise a real ValidationError
-                    try:
-                        class StrictString(PydanticBase):
-                            value: int  # wrong type
-
-                        StrictString.model_validate({"value": "not_an_int"})
-                    except PydanticVE as e:
-                        raise PydanticVE(e.errors(), input_type="python") from None
-                return super().model_validate(obj, **kwargs)
-
-        return OnceFailModel
-
     with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
-        with patch("phonebot.pipeline.extract._get_caller_info_model", side_effect=make_model_that_fails_once):
+        with patch("phonebot.pipeline.extract._get_caller_info_model", return_value=OnceFailModel):
             with patch.object(extract_module, "transcribe_node", mock_transcribe):
-                # Rebuild pipeline with patched functions
                 pipeline = extract_module.build_pipeline()
                 final_state = await pipeline.ainvoke({
                     "recording_id": "test",
@@ -465,22 +411,17 @@ async def test_retry_exhaustion_proceeds_to_end():
 
     from pydantic import ValidationError as PydanticVE, BaseModel as PydanticBase
 
-    def make_always_failing_model():
-        class AlwaysFailModel(PydanticBase):
-            first_name: str = ""
-            confidence: dict = {}
+    class AlwaysFailModel(PydanticBase):
+        first_name: str = ""
+        confidence: dict = {}
 
-            @classmethod
-            def model_validate(cls, obj, **kwargs):
-                try:
-                    class StrictInt(PydanticBase):
-                        value: int
+        @classmethod
+        def model_validate(cls, obj, **kwargs):
+            # Always raise a real ValidationError by coercing a bad value
+            class StrictInt(PydanticBase):
+                value: int
 
-                    StrictInt.model_validate({"value": "not_an_int"})
-                except PydanticVE as e:
-                    raise PydanticVE(e.errors(), input_type="python") from None
-
-        return AlwaysFailModel
+            StrictInt.model_validate({"value": "not_an_int"})  # raises ValidationError
 
     mock_caller_info = MagicMock()
     mock_caller_info.model_dump.return_value = {
@@ -498,7 +439,7 @@ async def test_retry_exhaustion_proceeds_to_end():
         return {"transcript_text": "Guten Tag."}
 
     with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
-        with patch("phonebot.pipeline.extract._get_caller_info_model", side_effect=make_always_failing_model):
+        with patch("phonebot.pipeline.extract._get_caller_info_model", return_value=AlwaysFailModel):
             with patch.object(extract_module, "transcribe_node", mock_transcribe):
                 pipeline = extract_module.build_pipeline()
                 # Should not raise; should reach END with retry exhaustion

@@ -35,8 +35,10 @@ def build_caller_info_model(prompt_path: Path) -> type:
         Field(
             default_factory=dict,
             description=(
-                "Per-field confidence scores between 0.0 and 1.0. "
-                "Keys match field names. Omit keys for fields not attempted."
+                'REQUIRED: Provide a confidence score between 0.0 and 1.0 for EVERY field '
+                "you extracted (non-null). Keys must match field names exactly. "
+                'Example: {"first_name": 0.95, "last_name": 0.8, "email": 0.4}. '
+                "Only omit a key if that field's value is null."
             ),
         ),
     )
