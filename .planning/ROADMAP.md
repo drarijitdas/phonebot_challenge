@@ -105,7 +105,7 @@ Plans:
 **Plans:** 1/2 plans executed
 Plans:
 - [x] 06-01-PLAN.md — Prompt externalization: export v1 JSON, build_caller_info_model factory, wire extract_node to dynamic model
-- [ ] 06-02-PLAN.md — GEPA optimization: install gepa, custom adapter, optimize.py script, accuracy delta checkpoint
+- [x] 06-02-PLAN.md — GEPA optimization: install gepa, custom adapter, optimize.py script, accuracy delta checkpoint
 
 ### Phase 7: Hardening
 **Goal**: LangGraph retry loop handles Pydantic validation failures gracefully, low-confidence extractions are flagged, and the final submission package is complete

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-prompt-optimization 06-01-PLAN.md
-last_updated: "2026-03-27T23:42:01.006Z"
-last_activity: 2026-03-27
+stopped_at: Completed 06-prompt-optimization phase
+last_updated: "2026-03-28T02:20:00.000Z"
+last_activity: 2026-03-28
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 12
-  completed_plans: 11
-  percent: 57
+  completed_plans: 12
+  percent: 86
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accurate extraction of caller contact information from German phone bot recordings
-**Current focus:** Phase 06 — prompt-optimization
+**Current focus:** Phase 06 complete — ready for Phase 07
 
 ## Current Position
 
-Phase: 06 (prompt-optimization) — EXECUTING
+Phase: 06 (prompt-optimization) — COMPLETE
 Plan: 2 of 2
-Status: Ready to execute
-Last activity: 2026-03-27
+Status: All plans executed
+Last activity: 2026-03-28
 
-Progress: [████████░░] 57%
+Progress: [████████░░] 86%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [████████░░] 57%
 | Phase 04-observability P02 | 10m | 2 tasks | 0 files |
 | Phase 05-model-a-b-testing P01 | 6m 10s | 2 tasks | 9 files |
 | Phase 06-prompt-optimization P01 | 3m | 2 tasks | 5 files |
+| Phase 06-prompt-optimization P02 | ~5m + 286s GEPA | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Recent decisions affecting current work:
 - [Phase 06-prompt-optimization]: build_caller_info_model() creates a new class per call for GEPA iteration isolation
 - [Phase 06-prompt-optimization]: confidence field excluded from JSON optimization surface (D-13) — factory always injects it
 - [Phase 06-prompt-optimization]: _CALLER_INFO_MODEL lazy-loaded from extraction_v1.json — avoids module-level I/O at import time
+- [Phase 06-prompt-optimization]: propose_new_texts = None tells GEPA to use default reflection_lm (Claude Opus) for prompt proposals
+- [Phase 06-prompt-optimization]: max_metric_calls counts per-example not per-batch — need 150+ for meaningful optimization with 30 recordings
+- [Phase 06-prompt-optimization]: Phoenix _port_in_use() check before launch_app() prevents gRPC RuntimeError when another instance running
+- [Phase 06-prompt-optimization]: GEPA +2% overall (+10% last_name) via cross-reference name/email spelling in system prompt
 
 ### Pending Todos
 
@@ -106,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T23:42:01.003Z
-Stopped at: Completed 06-prompt-optimization 06-01-PLAN.md
+Last session: 2026-03-28T02:20:00.000Z
+Stopped at: Completed 06-prompt-optimization phase (all 2 plans)
 Resume file: None
