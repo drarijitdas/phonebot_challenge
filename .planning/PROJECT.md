@@ -34,11 +34,15 @@ Accurate extraction of caller contact information from German phone bot recordin
 - [x] LangGraph pipeline orchestration — Validated in Phase 3: Extraction Pipeline
 - [x] Arize Phoenix observability and tracing — Validated in Phase 4: Observability (30 traces with span-level visibility)
 - [x] Multi-model support for A/B comparison — Validated in Phase 5: Model A/B Testing (Claude + Ollama registry, compare.py with Rich tables, Claude 83% winner)
+- [x] GEPA prompt optimization — Validated in Phase 6: Prompt Optimization (+2% overall via cross-reference name/email spelling)
+- [x] Retry loop for validation failures — Validated in Phase 7: Hardening (validate node with conditional retry, max 2 retries)
+- [x] Confidence flagging — Validated in Phase 7: Hardening (compute_flagged_fields < 0.7 threshold)
+- [x] Final submission package — Validated in Phase 7: Hardening (--final flag produces results.json, scores.json, comparison.json)
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
-- [ ] GEPA prompt optimization
+(none — all v1.0 requirements validated)
 
 ### Out of Scope
 
@@ -95,4 +99,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-27 after Phase 5 (Model A/B Testing) completion — model registry routes claude-*/ollama:* to LangChain backends, compare.py produces Rich comparison tables, Claude Sonnet 4.6 wins at 83% overall accuracy. Phoenix trace tagging pending human visual verification.*
+*Last updated: 2026-03-28 after Phase 7 (Hardening) completion — all 7 phases complete. Pipeline has retry loop, confidence flagging, and --final submission mode. v1.0 milestone ready for completion.*
