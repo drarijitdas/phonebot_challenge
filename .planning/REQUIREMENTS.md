@@ -36,11 +36,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Model Comparison
 
 - [x] **AB-01**: Pipeline supports swappable LLM backends (at minimum Claude Sonnet 4.6 + one open-source model)
-- [ ] **AB-02**: A/B test results are visible in Phoenix with per-model accuracy comparison
+- [x] **AB-02**: A/B test results are visible in Phoenix with per-model accuracy comparison
 
 ### Prompt Optimization
 
-- [ ] **OPT-01**: GEPA optimizes extraction prompts offline against ground truth with train/validation split
+- [x] **OPT-01**: GEPA optimizes extraction prompts offline against ground truth with train/validation split
 - [x] **OPT-02**: Optimized prompt is externalized to file and loaded at pipeline startup
 
 ### Infrastructure
@@ -107,8 +107,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OBS-01 | Phase 4 | Complete |
 | OBS-02 | Phase 4 | Complete |
 | AB-01 | Phase 5 | Complete |
-| AB-02 | Phase 5 | Pending |
-| OPT-01 | Phase 6 | Pending |
+| AB-02 | Phase 5 | Complete |
+| OPT-01 | Phase 6 | Complete |
 | OPT-02 | Phase 6 | Complete |
 | EXT-04 | Phase 7 | Complete |
 | QUAL-02 | Phase 7 | Complete |
@@ -121,4 +121,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after roadmap creation — all 22 requirements mapped*
+*Last updated: 2026-03-28 after gap closure — all 22 requirements complete*
