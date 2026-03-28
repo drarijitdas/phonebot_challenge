@@ -6,7 +6,7 @@ Produces extraction_v2.json (optimized prompt) and optimization_report.json (acc
 
 Usage:
     uv run python optimize.py
-    uv run python optimize.py --max-calls 5  # smoke test (2-3 iterations)
+    uv run python optimize.py --max-calls 10  # smoke test (3-4 iterations)
 """
 import argparse
 import asyncio
@@ -404,6 +404,14 @@ def main() -> None:
         help="Random seed for train/val split and GEPA",
     )
     args = parser.parse_args()
+
+    if args.max_calls < 6:
+        console.print(
+            f"[yellow]⚠ --max-calls {args.max_calls} is very low. "
+            "GEPA uses ~2 calls for baseline eval (train+val), leaving "
+            f"only {max(0, args.max_calls - 2)} for optimization iterations "
+            "(each needs ~2 calls). Use --max-calls 10+ for meaningful results.[/yellow]"
+        )
 
     # Initialize Phoenix tracing (D-06)
     phoenix_url = init_tracing()

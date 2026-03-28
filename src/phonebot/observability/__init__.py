@@ -34,7 +34,12 @@ def init_tracing() -> str:
     # Start Phoenix server — idempotent: skip if already running (Pitfall 4)
     session = px.active_session()
     if session is None:
-        session = px.launch_app(use_temp_dir=False)
+        try:
+            session = px.launch_app(use_temp_dir=False)
+        except RuntimeError:
+            # Port already bound (e.g. gRPC 4317 from a prior Phoenix instance).
+            # Connect to existing Phoenix instead of crashing.
+            session = px.active_session()
 
     # Register OTEL tracer provider with auto-instrumentation (D-08)
     # batch=False: synchronous export for CLI scripts (RESEARCH Pattern 1)
