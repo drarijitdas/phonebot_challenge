@@ -6,7 +6,7 @@ Produces extraction_v2.json (optimized prompt) and optimization_report.json (acc
 
 Usage:
     uv run python optimize.py
-    uv run python optimize.py --max-calls 10  # smoke test (3-4 iterations)
+    uv run python optimize.py --max-calls 150  # smoke test (~5 iterations, ~$1-2)
 """
 import argparse
 import asyncio
@@ -399,8 +399,10 @@ def main() -> None:
         description="GEPA prompt optimization for extraction pipeline",
     )
     parser.add_argument(
-        "--max-calls", type=int, default=150,
-        help="Maximum GEPA metric evaluation calls (D-15)",
+        "--max-calls", type=int, default=300,
+        help="Maximum GEPA metric evaluations counted per-example (D-15). "
+             "Each iteration evaluates ~30 examples (20 train + 10 val). "
+             "Use 150 for ~5 iterations, 300 for ~10.",
     )
     parser.add_argument(
         "--seed", type=int, default=42,
@@ -408,12 +410,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.max_calls < 6:
+    if args.max_calls < 60:
+        n_iter = max(0, args.max_calls // 30 - 1)
         console.print(
-            f"[yellow]⚠ --max-calls {args.max_calls} is very low. "
-            "GEPA uses ~2 calls for baseline eval (train+val), leaving "
-            f"only {max(0, args.max_calls - 2)} for optimization iterations "
-            "(each needs ~2 calls). Use --max-calls 10+ for meaningful results.[/yellow]"
+            f"[yellow]⚠ --max-calls {args.max_calls} is low. "
+            f"GEPA counts per-example (~30/iteration for 20 train + 10 val). "
+            f"Budget allows ~{n_iter} optimization iteration(s). "
+            "Use --max-calls 150+ for meaningful results.[/yellow]"
         )
 
     # Initialize Phoenix tracing (D-06)
