@@ -115,7 +115,10 @@ Plans:
   1. When the LLM returns malformed structured output, the LangGraph graph re-prompts with error context rather than crashing — observable via a forced-failure test
   2. Extracted results include an uncertainty or confidence indicator field distinguishing high-confidence from low-confidence extractions
   3. `outputs/results.json` produced with the optimized prompt and best-performing model contains final per-field accuracy scores
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 07-01-PLAN.md — Retry loop with validate node, confidence flagging, and strengthened confidence description
+- [ ] 07-02-PLAN.md — Final submission CLI (--final flag) with results, scores, comparison output files
 
 ## Progress
 
@@ -130,4 +133,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Observability | 2/2 | Complete   | 2026-03-27 |
 | 5. Model A/B Testing | 2/2 | Complete   | 2026-03-27 |
 | 6. Prompt Optimization | 1/2 | In Progress|  |
-| 7. Hardening | 0/TBD | Not started | - |
+| 7. Hardening | 0/2 | Not started | - |
