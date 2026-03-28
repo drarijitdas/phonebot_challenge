@@ -49,6 +49,7 @@ def _patched_obs(session=None, mock_register=None, env_overrides=None):
     ):
         import phonebot.observability as obs_module
         importlib.reload(obs_module)
+        obs_module._port_in_use = lambda port: False
         yield obs_module, mock_register
 
 
@@ -109,6 +110,7 @@ class TestLaunchAppUsesPersistentStorage:
 
             import phonebot.observability as obs_module
             importlib.reload(obs_module)
+            obs_module._port_in_use = lambda port: False
             obs_module.init_tracing()
             mock_launch.assert_called_once_with(use_temp_dir=False)
 

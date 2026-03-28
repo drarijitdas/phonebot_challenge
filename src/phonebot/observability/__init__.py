@@ -3,10 +3,17 @@
 Provides init_tracing() and shutdown_tracing() functions for Phoenix OTEL integration.
 """
 import os
+import socket
 from typing import Optional
 
 import phoenix as px
 from phoenix.otel import register
+
+
+def _port_in_use(port: int) -> bool:
+    """Check if a TCP port is already bound on localhost."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
 
 # Module-level tracer provider — stored so shutdown_tracing() can flush spans.
 _tracer_provider: Optional[object] = None
@@ -32,14 +39,14 @@ def init_tracing() -> str:
     os.environ["PHOENIX_WORKING_DIR"] = working_dir
 
     # Start Phoenix server — idempotent: skip if already running (Pitfall 4)
+    # Check both the HTTP port (6006) and gRPC port (4317) to avoid noisy
+    # background startup failures when another Phoenix instance is running.
     session = px.active_session()
-    if session is None:
-        try:
-            session = px.launch_app(use_temp_dir=False)
-        except RuntimeError:
-            # Port already bound (e.g. gRPC 4317 from a prior Phoenix instance).
-            # Connect to existing Phoenix instead of crashing.
-            session = px.active_session()
+    if session is None and not _port_in_use(6006):
+        session = px.launch_app(use_temp_dir=False)
+    elif session is None:
+        # Another Phoenix is already serving on 6006 — just connect the tracer
+        pass
 
     # Register OTEL tracer provider with auto-instrumentation (D-08)
     # batch=False: synchronous export for CLI scripts (RESEARCH Pattern 1)
