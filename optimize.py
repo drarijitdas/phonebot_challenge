@@ -168,6 +168,9 @@ class PhonebotAdapter:
     - "phone_number": field description for phone_number
     """
 
+    # Tell GEPA to use its default reflection_lm proposer (not a custom one)
+    propose_new_texts = None
+
     def __init__(
         self,
         ground_truth: dict[str, dict[str, Any]],
