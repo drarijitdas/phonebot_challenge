@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 07-hardening plan 01 (retry loop and confidence flagging)
-last_updated: "2026-03-28T12:34:01.167Z"
+status: verifying
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-28T12:39:45.557Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
   percent: 86
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 Phase: 07 (hardening) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-28
 
 Progress: [████████░░] 86%
@@ -59,6 +59,7 @@ Progress: [████████░░] 86%
 | Phase 06-prompt-optimization P01 | 3m | 2 tasks | 5 files |
 | Phase 06-prompt-optimization P02 | ~5m + 286s GEPA | 2 tasks | 8 files |
 | Phase 07-hardening P01 | 320s | 1 tasks | 4 files |
+| Phase 07-hardening P02 | 3m | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,7 @@ Recent decisions affecting current work:
 - [Phase 06-prompt-optimization]: GEPA +2% overall (+10% last_name) via cross-reference name/email spelling in system prompt
 - [Phase 07-hardening]: validate_node uses try/except around model_validate() for Pydantic ValidationError; route_after_validate exits on retry_count >= 2; error context excludes previous output (D-02)
 - [Phase 07-hardening]: CONFIDENCE_THRESHOLD = 0.7 (strict less-than); compute_flagged_fields reads confidence sub-dict from caller_info; confidence description strengthened to REQUIRED with example — fixes empty confidence dicts observed in all 30 recordings
+- [Phase 07-hardening]: Three helper functions (build_final_results_payload, build_scores_payload, build_comparison_payload) extracted from main() for testability
 
 ### Pending Todos
 
@@ -114,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T12:34:01.162Z
-Stopped at: Completed 07-hardening plan 01 (retry loop and confidence flagging)
+Last session: 2026-03-28T12:39:45.554Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
