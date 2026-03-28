@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-03-28T01:17:44.932963+00:00",
+  "duration_seconds": 286.4,
+  "max_metric_calls": 150,
+  "seed": 42,
+  "train_ids": [
+    "call_20",
+    "call_15",
+    "call_11",
+    "call_27",
+    "call_23",
+    "call_07",
+    "call_06",
+    "call_13",
+    "call_12",
+    "call_16",
+    "call_10",
+    "call_26",
+    "call_30",
+    "call_22",
+    "call_17",
+    "call_28",
+    "call_02",
+    "call_14",
+    "call_19",
+    "call_03"
+  ],
+  "val_ids": [
+    "call_18",
+    "call_29",
+    "call_05",
+    "call_25",
+    "call_08",
+    "call_09",
+    "call_24",
+    "call_01",
+    "call_04",
+    "call_21"
+  ],
+  "field_weights": {
+    "first_name": 0.1396648044692737,
+    "last_name": 0.3254189944134078,
+    "email": 0.46508379888268153,
+    "phone_number": 0.06983240223463688
+  },
+  "baseline_accuracy": {
+    "train": {
+      "first_name": 0.9,
+      "last_name": 0.85,
+      "email": 0.65,
+      "phone_number": 1.0
+    },
+    "train_overall": 0.85,
+    "val": {
+      "first_name": 0.9,
+      "last_name": 0.6,
+      "email": 0.7,
+      "phone_number": 1.0
+    },
+    "val_overall": 0.8
+  },
+  "optimized_accuracy": {
+    "val": {
+      "first_name": 0.9,
+      "last_name": 0.7,
+      "email": 0.7,
+      "phone_number": 1.0
+    },
+    "val_overall": 0.825
+  },
+  "delta": {
+    "first_name": 0.0,
+    "last_name": 0.1,
+    "email": 0.0,
+    "phone_number": 0.0
+  },
+  "delta_overall": 0.025,
+  "optimized_prompt_path": "src/phonebot/prompts/extraction_v2.json",
+  "gepa_run_dir": "outputs/gepa_run/"
+}
