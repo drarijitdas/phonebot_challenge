@@ -18,7 +18,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **EXT-01**: Pipeline extracts first_name, last_name, email, phone_number from each transcript via LLM structured output
 - [x] **EXT-02**: Extraction uses Pydantic BaseModel with class docstring as system prompt and Field descriptions as per-field extraction instructions
 - [x] **EXT-03**: Pipeline is orchestrated via LangGraph with typed state (transcribe -> extract -> validate flow)
-- [ ] **EXT-04**: LangGraph retry loop re-prompts LLM on Pydantic validation failure with error context
+- [x] **EXT-04**: LangGraph retry loop re-prompts LLM on Pydantic validation failure with error context
 - [x] **EXT-05**: Extraction prompt explicitly handles German spoken-form phone numbers and email addresses
 
 ### Evaluation
@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Quality
 
 - [x] **QUAL-01**: Extraction returns `None` (not hallucinated values) when field is not present in transcript
-- [ ] **QUAL-02**: Low-confidence extractions are flagged with uncertainty metadata
+- [x] **QUAL-02**: Low-confidence extractions are flagged with uncertainty metadata
 
 ## Future Requirements
 
@@ -110,8 +110,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AB-02 | Phase 5 | Pending |
 | OPT-01 | Phase 6 | Pending |
 | OPT-02 | Phase 6 | Complete |
-| EXT-04 | Phase 7 | Pending |
-| QUAL-02 | Phase 7 | Pending |
+| EXT-04 | Phase 7 | Complete |
+| QUAL-02 | Phase 7 | Complete |
 
 **Coverage:**
 

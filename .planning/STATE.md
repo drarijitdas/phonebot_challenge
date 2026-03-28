@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-prompt-optimization phase
-last_updated: "2026-03-28T02:20:00.000Z"
+stopped_at: Completed 07-hardening plan 01 (retry loop and confidence flagging)
+last_updated: "2026-03-28T12:34:01.167Z"
 last_activity: 2026-03-28
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 14
+  completed_plans: 13
   percent: 86
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Accurate extraction of caller contact information from German phone bot recordings
-**Current focus:** Phase 07 context gathered — ready for planning
+**Current focus:** Phase 07 — hardening
 
 ## Current Position
 
-Phase: 07 (hardening) — CONTEXT GATHERED
-Plan: 0 of 0
-Status: Context gathered, ready for planning
+Phase: 07 (hardening) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
 Last activity: 2026-03-28
 
 Progress: [████████░░] 86%
@@ -58,6 +58,7 @@ Progress: [████████░░] 86%
 | Phase 05-model-a-b-testing P01 | 6m 10s | 2 tasks | 9 files |
 | Phase 06-prompt-optimization P01 | 3m | 2 tasks | 5 files |
 | Phase 06-prompt-optimization P02 | ~5m + 286s GEPA | 2 tasks | 8 files |
+| Phase 07-hardening P01 | 320s | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 06-prompt-optimization]: max_metric_calls counts per-example not per-batch — need 150+ for meaningful optimization with 30 recordings
 - [Phase 06-prompt-optimization]: Phoenix _port_in_use() check before launch_app() prevents gRPC RuntimeError when another instance running
 - [Phase 06-prompt-optimization]: GEPA +2% overall (+10% last_name) via cross-reference name/email spelling in system prompt
+- [Phase 07-hardening]: validate_node uses try/except around model_validate() for Pydantic ValidationError; route_after_validate exits on retry_count >= 2; error context excludes previous output (D-02)
+- [Phase 07-hardening]: CONFIDENCE_THRESHOLD = 0.7 (strict less-than); compute_flagged_fields reads confidence sub-dict from caller_info; confidence description strengthened to REQUIRED with example — fixes empty confidence dicts observed in all 30 recordings
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T02:20:00.000Z
-Stopped at: Completed 06-prompt-optimization phase (all 2 plans)
+Last session: 2026-03-28T12:34:01.162Z
+Stopped at: Completed 07-hardening plan 01 (retry loop and confidence flagging)
 Resume file: None
