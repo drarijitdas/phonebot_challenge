@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-03-28T01:17:44.932963+00:00",
-  "duration_seconds": 286.4,
-  "max_metric_calls": 150,
+  "timestamp": "2026-03-28T22:04:45.872859+00:00",
+  "duration_seconds": 414.1,
+  "max_metric_calls": 300,
   "seed": 42,
   "train_ids": [
     "call_20",
