@@ -68,7 +68,12 @@ class CostTracker:
     """
 
     def __init__(self) -> None:
-        self.records: list[TokenRecord] = []
+        self._records: list[TokenRecord] = []
+
+    @property
+    def records(self) -> tuple[TokenRecord, ...]:
+        """Immutable view of recorded token usage."""
+        return tuple(self._records)
 
     def record(
         self,
@@ -88,7 +93,7 @@ class CostTracker:
             output_tokens=output_tokens,
             latency_seconds=latency_seconds,
         )
-        self.records.append(rec)
+        self._records.append(rec)
         return rec
 
     def record_from_response_metadata(
@@ -117,20 +122,20 @@ class CostTracker:
 
     @property
     def total_cost(self) -> float:
-        return sum(r.cost_usd for r in self.records)
+        return sum(r.cost_usd for r in self._records)
 
     @property
     def total_input_tokens(self) -> int:
-        return sum(r.input_tokens for r in self.records)
+        return sum(r.input_tokens for r in self._records)
 
     @property
     def total_output_tokens(self) -> int:
-        return sum(r.output_tokens for r in self.records)
+        return sum(r.output_tokens for r in self._records)
 
     def _sum_cost_by(self, attr: str) -> dict[str, float]:
         """Sum cost grouped by a record attribute."""
         costs: dict[str, float] = {}
-        for r in self.records:
+        for r in self._records:
             key = getattr(r, attr)
             costs[key] = costs.get(key, 0.0) + r.cost_usd
         return costs
@@ -155,7 +160,7 @@ class CostTracker:
             "cost_by_node": {
                 k: round(v, 6) for k, v in self.cost_by_node().items()
             },
-            "num_invocations": len(self.records),
+            "num_invocations": len(self._records),
         }
 
     def print_summary(self, console: Console | None = None) -> None:
@@ -171,8 +176,8 @@ class CostTracker:
         table.add_row("Total Cost", f"${total:.4f}")
         table.add_row("Input Tokens", f"{self.total_input_tokens:,}")
         table.add_row("Output Tokens", f"{self.total_output_tokens:,}")
-        table.add_row("LLM Invocations", str(len(self.records)))
-        n_recordings = len(set(r.recording_id for r in self.records))
+        table.add_row("LLM Invocations", str(len(self._records)))
+        n_recordings = len(set(r.recording_id for r in self._records))
         if n_recordings:
             table.add_row("Avg Cost/Recording", f"${total / n_recordings:.4f}")
         console.print(table)

@@ -5,11 +5,12 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
-import phonenumbers
-from phonenumbers import PhoneNumberFormat
+from phonebot.models.caller_info import EXTRACTION_FIELDS
+from phonebot.utils import normalize_phone_e164
 
 
-FIELDS = ("first_name", "last_name", "email", "phone_number")
+# Re-export for backward compatibility — all existing `from metrics import FIELDS` continue to work.
+FIELDS = EXTRACTION_FIELDS
 
 
 def load_ground_truth(path: Path) -> dict[str, dict[str, Any]]:
@@ -20,13 +21,7 @@ def load_ground_truth(path: Path) -> dict[str, dict[str, Any]]:
 
 def normalize_phone(raw: str | None) -> str | None:
     """Normalize to E.164 with German default region. Returns raw on failure."""
-    if raw is None:
-        return None
-    try:
-        parsed = phonenumbers.parse(raw, "DE")
-        return phonenumbers.format_number(parsed, PhoneNumberFormat.E164)
-    except phonenumbers.NumberParseException:
-        return raw  # Return as-is; comparison will likely fail
+    return normalize_phone_e164(raw)
 
 
 def normalize_text(raw: str | None) -> str | None:

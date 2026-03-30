@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from phonebot.pipeline.transcribe import get_transcript_text, get_words
+from phonebot.pipeline.shared import PipelineVersion
 
 
 class DifficultyTier(str, Enum):
@@ -31,7 +32,11 @@ class DifficultyTier(str, Enum):
     HARD = "hard"
 
 
-# Scoring thresholds
+# Scoring thresholds — derived from the scoring function below which assigns
+# 0-2 points per signal (transcript length, speakers, foreign markers, etc.).
+# A "typical" German-name, single-speaker, short transcript scores 0-3.
+# International names with background noise or multiple speakers score 4-6.
+# Worst-case transcripts (foreign name + low confidence + long) score 7+.
 _EASY_MAX = 3       # Difficulty score 0-3 → EASY
 _MEDIUM_MAX = 6     # Difficulty score 4-6 → MEDIUM
                     # Score 7+ → HARD
@@ -78,7 +83,7 @@ class ClassificationResult:
     tier: DifficultyTier
     score: int  # Raw difficulty score (0-10+)
     signals: DifficultySignals
-    recommended_pipeline: str  # "v1", "v2", or "v3"
+    recommended_pipeline: PipelineVersion
     recommended_ac_iterations: int  # 0 for v1, 1-3 for v2/v3
     use_few_shot: bool  # Whether to enable retrieval
 
@@ -150,7 +155,8 @@ def classify_transcript(
     # Score computation
     score = 0
 
-    # Long transcripts are harder (more noise)
+    # Long transcripts are harder (more noise, more irrelevant utterances).
+    # 2000 chars ≈ 90s of speech; 4000 chars ≈ 3min — typical calls are 30-60s.
     if signals.transcript_length > 2000:
         score += 1
     if signals.transcript_length > 4000:
@@ -166,7 +172,8 @@ def classify_transcript(
     # Foreign name indicators
     score += signals.foreign_name_indicators
 
-    # Low confidence words indicate poor audio / unusual speech
+    # Low confidence words (Deepgram word.confidence < 0.7) indicate poor
+    # audio quality or unusual speech patterns. >10% is notable; >20% is severe.
     low_conf_ratio = signals.low_confidence_words / max(signals.total_words, 1)
     if low_conf_ratio > 0.1:
         score += 1
@@ -180,17 +187,17 @@ def classify_transcript(
     # Determine tier
     if score <= _EASY_MAX:
         tier = DifficultyTier.EASY
-        pipeline = "v1"
+        pipeline = PipelineVersion.V1
         ac_iterations = 0
         use_few_shot = False
     elif score <= _MEDIUM_MAX:
         tier = DifficultyTier.MEDIUM
-        pipeline = "v2"
+        pipeline = PipelineVersion.V2
         ac_iterations = 1
         use_few_shot = False
     else:
         tier = DifficultyTier.HARD
-        pipeline = "v2"
+        pipeline = PipelineVersion.V2
         ac_iterations = 3
         use_few_shot = True
 

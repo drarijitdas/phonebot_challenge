@@ -21,7 +21,9 @@ from deepgram import AsyncDeepgramClient  # noqa: E402 — must come after load_
 TRANSCRIPT_DIR = Path("data/transcripts")
 CONCURRENCY = int(os.getenv("DEEPGRAM_CONCURRENCY", "5"))
 
-# Default sample set for smart_format analysis (calls 01-05 + foreign-name recordings)
+# Default sample set for smart_format analysis: calls 01-05 cover typical German
+# names; calls 16, 20, 25 cover international names (García, Lefèvre, etc.)
+# where Deepgram's phonetic approximation is most challenging.
 _DEFAULT_SAMPLE_IDS = [
     "call_01", "call_02", "call_03", "call_04", "call_05",
     "call_16", "call_20", "call_25",

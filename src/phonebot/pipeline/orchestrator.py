@@ -1,21 +1,27 @@
 """Lifecycle orchestrator composing the full extraction pipeline.
 
 Top-level LangGraph that manages the complete pipeline lifecycle:
-  START → transcribe → classify → route → [v1|v2|v3] → postprocess → escalation_check → store → END
+  START → transcribe → classify → route → [v1|v2] → postprocess → escalation_check → store → END
 
 Uses conditional edges after classification to dispatch each recording to
-the appropriate sub-pipeline based on difficulty.
+the appropriate sub-pipeline based on difficulty. Pipeline dispatch uses a
+registry pattern (OCP) — adding a new pipeline version requires only a
+register_pipeline_runner() call, not modification of the dispatch function.
 """
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 from datetime import datetime, timezone
+from typing import Any, Callable, Coroutine
 
 from typing_extensions import TypedDict
 
 from dotenv import load_dotenv
 
+# load_dotenv() must precede langchain/langgraph imports so that API keys
+# and Phoenix config are available when those libraries initialize (Pitfall 2).
 load_dotenv()
 
 from langgraph.graph import END, START, StateGraph  # noqa: E402
@@ -30,11 +36,27 @@ from phonebot.pipeline.extract import (  # noqa: E402
 )
 from phonebot.pipeline.escalation import check_escalation  # noqa: E402
 from phonebot.pipeline.stages.postprocess import postprocess  # noqa: E402
+from phonebot.pipeline.shared import PipelineVersion  # noqa: E402
 from phonebot.observability.logging import (  # noqa: E402
     log_extraction_start,
     log_extraction_complete,
     log_escalation,
 )
+
+
+# ---------------------------------------------------------------------------
+# Pipeline dispatch registry (OCP: extend by registration, not modification)
+# ---------------------------------------------------------------------------
+
+PipelineRunner = Callable[["OrchestratorState"], Coroutine[Any, Any, dict]]
+_PIPELINE_RUNNERS: dict[PipelineVersion, PipelineRunner] = {}
+
+
+def register_pipeline_runner(
+    version: PipelineVersion, runner: PipelineRunner,
+) -> None:
+    """Register a pipeline runner for orchestrator dispatch."""
+    _PIPELINE_RUNNERS[version] = runner
 
 
 class OrchestratorState(TypedDict):
@@ -94,43 +116,56 @@ async def retrieve_examples_node(state: OrchestratorState) -> dict:
         )
         context = store.format_few_shot_prompt(examples)
         return {"few_shot_context": context}
-    except Exception:
+    except (ImportError, FileNotFoundError, ValueError) as exc:
+        from phonebot.observability.logging import get_logger
+        get_logger("orchestrator").warning(
+            "few_shot_retrieval_failed", error=str(exc),
+        )
         return {"few_shot_context": None}
 
 
-async def extract_node(state: OrchestratorState) -> dict:
-    """Dispatch to v1 or v2 based on classifier recommendation."""
-    recording_id = state["recording_id"]
-    pipeline = state.get("recommended_pipeline", "v1")
-    model_name = state.get("model") or os.getenv("PHONEBOT_MODEL", "claude-sonnet-4-6")
+async def _run_v1(state: OrchestratorState) -> dict:
+    """Run v1 extraction pipeline with optional few-shot context."""
+    transcript = state["transcript_text"] or ""
+    if state.get("few_shot_context"):
+        transcript = state["few_shot_context"] + transcript
+    return await PIPELINE.ainvoke({
+        "recording_id": state["recording_id"],
+        "transcript_text": transcript,
+        "caller_info": None,
+        "retry_count": 0,
+        "validation_errors": None,
+    })
 
-    if pipeline == "v2":
-        from phonebot.pipeline.extract_v2 import PIPELINE_V2
-        ac_iterations = 3 if state.get("difficulty_tier") == "hard" else 1
-        final_state = await PIPELINE_V2.ainvoke({
-            "recording_id": recording_id,
-            "transcript_text": state["transcript_text"],
-            "caller_info": None,
-            "retry_count": 0,
-            "validation_errors": None,
-            "ac_iteration": 0,
-            "ac_max_iterations": ac_iterations,
-            "critic_approved": False,
-            "critic_feedback": None,
-            "critic_field_verdicts": None,
-            "ac_history": [],
-        })
-    else:
-        transcript = state["transcript_text"] or ""
-        if state.get("few_shot_context"):
-            transcript = state["few_shot_context"] + transcript
-        final_state = await PIPELINE.ainvoke({
-            "recording_id": recording_id,
-            "transcript_text": transcript,
-            "caller_info": None,
-            "retry_count": 0,
-            "validation_errors": None,
-        })
+
+async def _run_v2(state: OrchestratorState) -> dict:
+    """Run v2 actor-critic extraction pipeline."""
+    from phonebot.pipeline.extract_v2 import PIPELINE_V2
+    ac_iterations = 3 if state.get("difficulty_tier") == "hard" else 1
+    return await PIPELINE_V2.ainvoke({
+        "recording_id": state["recording_id"],
+        "transcript_text": state["transcript_text"],
+        "caller_info": None,
+        "retry_count": 0,
+        "validation_errors": None,
+        "ac_iteration": 0,
+        "ac_max_iterations": ac_iterations,
+        "critic_approved": False,
+        "critic_feedback": None,
+        "critic_field_verdicts": None,
+        "ac_history": [],
+    })
+
+
+register_pipeline_runner(PipelineVersion.V1, _run_v1)
+register_pipeline_runner(PipelineVersion.V2, _run_v2)
+
+
+async def extract_node(state: OrchestratorState) -> dict:
+    """Dispatch to registered pipeline based on classifier recommendation."""
+    pipeline = PipelineVersion(state.get("recommended_pipeline", PipelineVersion.V1))
+    runner = _PIPELINE_RUNNERS[pipeline]
+    final_state = await runner(state)
 
     caller_info = final_state.get("caller_info") or {}
     return {
@@ -187,35 +222,37 @@ async def finalize_node(state: OrchestratorState) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Graph construction — lazy to avoid import-time compilation cost
+# Graph construction — lazy via lru_cache to avoid import-time compilation
 # ---------------------------------------------------------------------------
 
-_ORCHESTRATOR = None
 
-
+@functools.lru_cache(maxsize=1)
 def _get_orchestrator():
-    global _ORCHESTRATOR
-    if _ORCHESTRATOR is None:
-        builder = StateGraph(OrchestratorState)
-        builder.add_node("transcribe", orch_transcribe_node)
-        builder.add_node("classify", classify_node)
-        builder.add_node("retrieve_examples", retrieve_examples_node)
-        builder.add_node("extract", extract_node)
-        builder.add_node("postprocess", postprocess_node)
-        builder.add_node("escalation_check", escalation_node)
-        builder.add_node("finalize", finalize_node)
+    """Build and cache the orchestrator LangGraph pipeline.
 
-        builder.add_edge(START, "transcribe")
-        builder.add_edge("transcribe", "classify")
-        builder.add_edge("classify", "retrieve_examples")
-        builder.add_edge("retrieve_examples", "extract")
-        builder.add_edge("extract", "postprocess")
-        builder.add_edge("postprocess", "escalation_check")
-        builder.add_edge("escalation_check", "finalize")
-        builder.add_edge("finalize", END)
+    Uses lru_cache for thread-safe singleton behavior. The graph is compiled
+    on first call, not at import time, so module import is fast and side-effect
+    free. Subsequent calls return the cached compiled graph.
+    """
+    builder = StateGraph(OrchestratorState)
+    builder.add_node("transcribe", orch_transcribe_node)
+    builder.add_node("classify", classify_node)
+    builder.add_node("retrieve_examples", retrieve_examples_node)
+    builder.add_node("extract", extract_node)
+    builder.add_node("postprocess", postprocess_node)
+    builder.add_node("escalation_check", escalation_node)
+    builder.add_node("finalize", finalize_node)
 
-        _ORCHESTRATOR = builder.compile()
-    return _ORCHESTRATOR
+    builder.add_edge(START, "transcribe")
+    builder.add_edge("transcribe", "classify")
+    builder.add_edge("classify", "retrieve_examples")
+    builder.add_edge("retrieve_examples", "extract")
+    builder.add_edge("extract", "postprocess")
+    builder.add_edge("postprocess", "escalation_check")
+    builder.add_edge("escalation_check", "finalize")
+    builder.add_edge("finalize", END)
+
+    return builder.compile()
 
 
 async def run_orchestrated_pipeline(
@@ -278,7 +315,7 @@ async def run_orchestrated_pipeline(
                 "caller_info": final_state.get("caller_info"),
                 "flagged_fields": final_state.get("flagged_fields", []),
                 "model": model_name,
-                "pipeline_used": final_state.get("pipeline_used", "v1"),
+                "pipeline_used": final_state.get("pipeline_used", PipelineVersion.V1),
                 "difficulty_tier": final_state.get("difficulty_tier"),
                 "difficulty_score": final_state.get("difficulty_score"),
                 "postprocess": final_state.get("postprocess_result"),

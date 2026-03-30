@@ -68,7 +68,12 @@ class LatencyMonitor:
 
     def __init__(self, budgets: dict[str, float] | None = None) -> None:
         self.budgets = budgets or DEFAULT_BUDGETS
-        self.records: list[LatencyRecord] = []
+        self._records: list[LatencyRecord] = []
+
+    @property
+    def records(self) -> tuple[LatencyRecord, ...]:
+        """Immutable view of recorded latency measurements."""
+        return tuple(self._records)
 
     @contextmanager
     def track(self, recording_id: str, node: str) -> Generator[None, None, None]:
@@ -86,19 +91,19 @@ class LatencyMonitor:
             duration_seconds=round(duration_seconds, 3),
             budget_seconds=self.budgets.get(node),
         )
-        self.records.append(rec)
+        self._records.append(rec)
         return rec
 
     @property
     def violations(self) -> list[LatencyRecord]:
         """All records that exceeded their SLA budget."""
-        return [r for r in self.records if not r.within_budget]
+        return [r for r in self._records if not r.within_budget]
 
     def avg_by_node(self) -> dict[str, float]:
         """Average duration per node across all recordings."""
         sums: dict[str, float] = {}
         counts: dict[str, int] = {}
-        for r in self.records:
+        for r in self._records:
             sums[r.node] = sums.get(r.node, 0.0) + r.duration_seconds
             counts[r.node] = counts.get(r.node, 0) + 1
         return {node: sums[node] / counts[node] for node in sums}
@@ -106,7 +111,7 @@ class LatencyMonitor:
     def p95_by_node(self) -> dict[str, float]:
         """95th percentile duration per node."""
         by_node: dict[str, list[float]] = defaultdict(list)
-        for r in self.records:
+        for r in self._records:
             by_node[r.node].append(r.duration_seconds)
 
         result = {}
@@ -131,7 +136,7 @@ class LatencyMonitor:
                 }
                 for r in self.violations
             ],
-            "total_records": len(self.records),
+            "total_records": len(self._records),
         }
 
     def print_summary(self, console: Console | None = None) -> None:

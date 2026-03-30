@@ -16,11 +16,9 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Any
 
-import phonenumbers
-from phonenumbers import PhoneNumberFormat
-
 from phonebot.knowledge.contact_patterns import validate_contacts, adjust_confidence
 from phonebot.knowledge.name_lookup import ground_caller_info
+from phonebot.utils import normalize_phone_e164
 
 
 @dataclass
@@ -38,12 +36,8 @@ def _normalize_phone(phone: str | None) -> tuple[str | None, bool]:
     """Normalize phone to E.164. Returns (normalized, was_changed)."""
     if not phone:
         return phone, False
-    try:
-        parsed = phonenumbers.parse(phone, "DE")
-        e164 = phonenumbers.format_number(parsed, PhoneNumberFormat.E164)
-        return e164, e164 != phone
-    except phonenumbers.NumberParseException:
-        return phone, False
+    normalized = normalize_phone_e164(phone)
+    return normalized, normalized != phone
 
 
 def _normalize_email(email: str | None) -> tuple[str | None, bool]:

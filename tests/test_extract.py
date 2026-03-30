@@ -50,10 +50,10 @@ def test_graph_topology():
 
 
 def test_pipeline_state_fields():
-    """PipelineState TypedDict has correct field names and types."""
-    from phonebot.pipeline.extract import PipelineState
+    """BasePipelineState TypedDict has correct field names and types."""
+    from phonebot.pipeline.shared import BasePipelineState
 
-    hints = typing.get_type_hints(PipelineState)
+    hints = typing.get_type_hints(BasePipelineState)
 
     assert "recording_id" in hints, "PipelineState missing recording_id"
     assert "transcript_text" in hints, "PipelineState missing transcript_text"
@@ -259,7 +259,7 @@ async def test_extract_node_uses_registry():
     mock_model = MagicMock()
     mock_model.with_structured_output.return_value = mock_structured
 
-    with patch("phonebot.pipeline.extract.get_model", return_value=mock_model) as mock_get:
+    with patch("phonebot.pipeline.shared.get_model", return_value=mock_model) as mock_get:
         with patch.dict(os.environ, {"PHONEBOT_MODEL": "ollama:llama3.2:3b"}):
             from phonebot.pipeline.extract import extract_node
             result = await extract_node({
@@ -314,7 +314,7 @@ async def test_extract_node_uses_dynamic_model():
     extract_module.set_caller_info_model(DynamicModel)
 
     try:
-        with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
+        with patch("phonebot.pipeline.shared.get_model", return_value=mock_model):
             result = await extract_module.extract_node({
                 "recording_id": "test",
                 "transcript_text": "Guten Tag",
@@ -385,7 +385,7 @@ async def test_retry_on_validation_failure():
     async def mock_transcribe(state):
         return {"transcript_text": "Guten Tag, ich heiße Max."}
 
-    with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
+    with patch("phonebot.pipeline.shared.get_model", return_value=mock_model):
         with patch("phonebot.pipeline.extract._get_caller_info_model", return_value=OnceFailModel):
             with patch.object(extract_module, "transcribe_node", mock_transcribe):
                 pipeline = extract_module.build_pipeline()
@@ -438,7 +438,7 @@ async def test_retry_exhaustion_proceeds_to_end():
     async def mock_transcribe(state):
         return {"transcript_text": "Guten Tag."}
 
-    with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
+    with patch("phonebot.pipeline.shared.get_model", return_value=mock_model):
         with patch("phonebot.pipeline.extract._get_caller_info_model", return_value=AlwaysFailModel):
             with patch.object(extract_module, "transcribe_node", mock_transcribe):
                 pipeline = extract_module.build_pipeline()
@@ -538,7 +538,7 @@ async def test_extract_node_injects_error_context_on_retry():
     mock_model = MagicMock()
     mock_model.with_structured_output.return_value = mock_structured
 
-    with patch("phonebot.pipeline.extract.get_model", return_value=mock_model):
+    with patch("phonebot.pipeline.shared.get_model", return_value=mock_model):
         from phonebot.pipeline.extract import extract_node
 
         result = await extract_node({

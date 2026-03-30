@@ -6,6 +6,10 @@ specific feedback. The actor then refines its extraction based on critic feedbac
 This catches semantic errors (wrong name, miscounted digits) that schema validation
 cannot detect.
 
+Core extraction and validation logic is shared with v1 via pipeline.shared
+to eliminate duplication. This module provides the v2-specific actor-critic
+graph topology, critic evaluation, and runner configuration.
+
 Graph topology:
   START -> transcribe -> actor_extract -> pydantic_validate -> route_pydantic
     route_pydantic:
@@ -24,52 +28,54 @@ Graph topology:
 """
 from __future__ import annotations
 
-import asyncio
+import functools
 import json
 import os
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
-from typing_extensions import TypedDict
-
 from dotenv import load_dotenv
 
-load_dotenv()  # Must precede langchain/langgraph imports (Pitfall 2)
+# load_dotenv() must precede langchain/langgraph imports so that API keys
+# and Phoenix config are available when those libraries initialize (Pitfall 2).
+load_dotenv()
 
-from pydantic import BaseModel, Field, ValidationError  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
 from phonebot.models.model_registry import get_model  # noqa: E402
 from langgraph.graph import END, START, StateGraph  # noqa: E402
-from openinference.instrumentation import using_attributes  # noqa: E402
 
 from phonebot.pipeline.extract import (  # noqa: E402
     transcribe_node,
     _get_caller_info_model,
     set_caller_info_model,
-    compute_flagged_fields,
-    CONFIDENCE_THRESHOLD,
-    EXTRACT_CONCURRENCY,
-    TRANSCRIPT_DIR,
+)
+from phonebot.pipeline.shared import (  # noqa: E402
+    BasePipelineState,
+    validate_caller_info,
+    extract_caller_info,
+    run_pipeline_concurrent,
+    base_initial_state,
+    base_result,
 )
 from phonebot.prompts import load_prompt  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Critic prompt — loaded once from JSON
+# Critic prompt — loaded once from JSON via lru_cache
 # ---------------------------------------------------------------------------
 _CRITIC_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "critic_prompt.json"
-_CRITIC_SYSTEM_PROMPT: str | None = None
 
 
+@functools.lru_cache(maxsize=1)
 def _get_critic_system_prompt() -> str:
-    """Load critic system prompt from JSON (cached after first call)."""
-    global _CRITIC_SYSTEM_PROMPT
-    if _CRITIC_SYSTEM_PROMPT is None:
-        data = load_prompt(_CRITIC_PROMPT_PATH)
-        _CRITIC_SYSTEM_PROMPT = data["system_prompt"]
-    return _CRITIC_SYSTEM_PROMPT
+    """Load and cache the critic system prompt from JSON.
+
+    Uses lru_cache for thread-safe caching. The prompt is read from disk
+    on first call and cached for all subsequent calls.
+    """
+    data = load_prompt(_CRITIC_PROMPT_PATH)
+    return data["system_prompt"]
 
 
-# Re-export for external callers (optimize.py, run.py)
 __all__ = ["run_pipeline_v2", "set_caller_info_model", "PIPELINE_V2"]
 
 
@@ -110,15 +116,15 @@ class CriticOutput(BaseModel):
 # State schema
 # ---------------------------------------------------------------------------
 
-class ActorCriticState(TypedDict):
-    # Core fields (same semantics as v1 PipelineState)
-    recording_id: str
-    transcript_text: Optional[str]
-    caller_info: Optional[dict]
-    retry_count: int
-    validation_errors: Optional[list[str]]
+class ActorCriticState(BasePipelineState):
+    """v2 pipeline state — extends BasePipelineState with actor-critic fields.
 
-    # Actor-critic loop tracking
+    Inherits from BasePipelineState:
+      recording_id, transcript_text, caller_info, retry_count, validation_errors
+
+    Additional fields for actor-critic loop:
+    """
+
     ac_iteration: int               # current iteration (0-indexed)
     ac_max_iterations: int          # configurable cap
     critic_approved: bool           # True when critic accepts extraction
@@ -132,54 +138,21 @@ class ActorCriticState(TypedDict):
 # ---------------------------------------------------------------------------
 
 async def actor_extract_node(state: ActorCriticState) -> dict:
-    """Initial extraction — identical logic to v1 extract_node.
+    """Initial extraction — delegates to shared.extract_caller_info().
 
     On retry (validation_errors present), injects error context per D-02:
     includes transcript and Pydantic error messages, but NOT the previous
     failed output (avoids anchoring).
     """
-    model = get_model(os.getenv("PHONEBOT_MODEL", "claude-sonnet-4-6"))
-    caller_info_cls = _get_caller_info_model()
-    structured_model = model.with_structured_output(caller_info_cls, method="json_schema")
-
-    transcript = state["transcript_text"]
-    validation_errors = state.get("validation_errors")
-
-    if validation_errors:
-        errors_text = "\n".join(f"- {e}" for e in validation_errors)
-        prompt = (
-            f"{transcript}\n\n"
-            f"Previous extraction attempt returned invalid output. "
-            f"Validation errors:\n"
-            f"{errors_text}\n"
-            f"Re-extract carefully, ensuring all fields match their required types."
-        )
-    else:
-        prompt = transcript
-
-    result = await structured_model.ainvoke(prompt)
-    return {"caller_info": result.model_dump()}
+    return await extract_caller_info(state, _get_caller_info_model())
 
 
 async def pydantic_validate_node(state: ActorCriticState) -> dict:
-    """Validate extracted CallerInfo using Pydantic (same as v1 validate_node)."""
-    caller_info_cls = _get_caller_info_model()
+    """Validate extracted CallerInfo using Pydantic.
 
-    if state.get("caller_info") is None:
-        return {
-            "validation_errors": ["extract_node returned no output"],
-            "retry_count": state.get("retry_count", 0) + 1,
-        }
-
-    try:
-        caller_info_cls.model_validate(state["caller_info"])
-        return {"validation_errors": None}
-    except ValidationError as e:
-        errors = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
-        return {
-            "validation_errors": errors,
-            "retry_count": state.get("retry_count", 0) + 1,
-        }
+    Delegates to shared.validate_caller_info() — same logic as v1 validate_node.
+    """
+    return await validate_caller_info(state, _get_caller_info_model())
 
 
 async def critic_evaluate_node(state: ActorCriticState) -> dict:
@@ -272,24 +245,12 @@ async def actor_refine_node(state: ActorCriticState) -> dict:
 
 
 async def pydantic_validate_refined_node(state: ActorCriticState) -> dict:
-    """Validate refined extraction using Pydantic (same logic, distinct node for graph clarity)."""
-    caller_info_cls = _get_caller_info_model()
+    """Validate refined extraction using Pydantic.
 
-    if state.get("caller_info") is None:
-        return {
-            "validation_errors": ["refine_node returned no output"],
-            "retry_count": state.get("retry_count", 0) + 1,
-        }
-
-    try:
-        caller_info_cls.model_validate(state["caller_info"])
-        return {"validation_errors": None}
-    except ValidationError as e:
-        errors = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
-        return {
-            "validation_errors": errors,
-            "retry_count": state.get("retry_count", 0) + 1,
-        }
+    Delegates to shared.validate_caller_info() — distinct graph node name
+    for topology clarity, but identical validation logic.
+    """
+    return await validate_caller_info(state, _get_caller_info_model())
 
 
 # ---------------------------------------------------------------------------
@@ -393,57 +354,44 @@ async def run_pipeline_v2(
 ) -> list[dict]:
     """Run actor-critic extraction pipeline concurrently.
 
-    Same interface and output format as v1 run_pipeline, with additional
-    max_ac_iterations param. Output is compatible with compare.py and
-    compute_metrics() — same keys: id, caller_info, flagged_fields, model, timestamp.
+    Delegates to shared.run_pipeline_concurrent() for environment setup,
+    bounded concurrency, and OpenTelemetry trace attribution. Provides
+    v2-specific initial state factory (with actor-critic fields) and result
+    builder (with ac_iterations_used, critic_approved, ac_history).
 
-    Adds 'ac_iterations_used' and 'ac_history' keys for observability.
+    Output is compatible with compare.py and compute_metrics() — same core
+    keys: id, caller_info, flagged_fields, model, timestamp.
     """
-    os.environ["PHONEBOT_MODEL"] = model_name
-    effective_concurrency = int(os.getenv("EXTRACT_CONCURRENCY", str(concurrency)))
-    semaphore = asyncio.Semaphore(effective_concurrency)
 
-    async def process_one(recording_id: str) -> dict:
-        async with semaphore:
-            with using_attributes(
-                metadata={
-                    "recording_id": recording_id,
-                    "model": model_name,
-                    "prompt_version": prompt_version,
-                    "pipeline": "v2_actor_critic",
-                    "max_ac_iterations": max_ac_iterations,
-                    "run_timestamp": datetime.now(timezone.utc).isoformat(),
-                },
-                prompt_template_version=prompt_version,
-            ):
-                final_state = await PIPELINE_V2.ainvoke(
-                    {
-                        "recording_id": recording_id,
-                        "transcript_text": None,
-                        "caller_info": None,
-                        "retry_count": 0,
-                        "validation_errors": None,
-                        "ac_iteration": 0,
-                        "ac_max_iterations": max_ac_iterations,
-                        "critic_approved": False,
-                        "critic_feedback": None,
-                        "critic_field_verdicts": None,
-                        "ac_history": [],
-                    }
-                )
-
-        flagged = compute_flagged_fields(final_state.get("caller_info") or {})
+    def _initial_state(recording_id: str) -> dict:
         return {
-            "id": recording_id,
-            "caller_info": final_state["caller_info"],
-            "flagged_fields": flagged,
-            "model": model_name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            # v2-specific observability fields
+            **base_initial_state(recording_id),
+            "ac_iteration": 0,
+            "ac_max_iterations": max_ac_iterations,
+            "critic_approved": False,
+            "critic_feedback": None,
+            "critic_field_verdicts": None,
+            "ac_history": [],
+        }
+
+    def _build_result(recording_id: str, final_state: dict, model: str) -> dict:
+        return {
+            **base_result(recording_id, final_state, model),
             "ac_iterations_used": final_state.get("ac_iteration", 0),
             "critic_approved": final_state.get("critic_approved", False),
             "ac_history": final_state.get("ac_history", []),
         }
 
-    tasks = [process_one(rid) for rid in recording_ids]
-    return list(await asyncio.gather(*tasks))
+    return await run_pipeline_concurrent(
+        pipeline_graph=PIPELINE_V2,
+        recording_ids=recording_ids,
+        model_name=model_name,
+        concurrency=concurrency,
+        prompt_version=prompt_version,
+        initial_state_factory=_initial_state,
+        result_builder=_build_result,
+        extra_metadata={
+            "pipeline": "v2_actor_critic",
+            "max_ac_iterations": max_ac_iterations,
+        },
+    )

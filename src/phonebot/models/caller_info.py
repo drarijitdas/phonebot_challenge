@@ -3,6 +3,11 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+# Canonical list of extraction fields. Imported by evaluation, error analysis,
+# and benchmark modules. Defined here alongside the CallerInfo model it describes.
+EXTRACTION_FIELDS: tuple[str, ...] = ("first_name", "last_name", "email", "phone_number")
+
+
 class CallerInfo(BaseModel):
     """
     You are extracting caller contact information from a German phone bot transcript.

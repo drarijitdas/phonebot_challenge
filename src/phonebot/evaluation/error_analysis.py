@@ -19,6 +19,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+import typing
 from typing import Any
 
 from rich.console import Console
@@ -135,6 +136,16 @@ def _classify_phone_error(predicted: str | None, expected: str | None) -> tuple[
     return ErrorType.HALLUCINATION, f"{diff_positions} digits differ (likely wrong number)"
 
 
+# Error classifier registry: maps field names to classification functions.
+# Extend by adding new entries rather than modifying the dispatch logic.
+_FIELD_CLASSIFIERS: dict[str, typing.Callable] = {
+    "first_name": _classify_name_error,
+    "last_name": _classify_name_error,
+    "email": _classify_email_error,
+    "phone_number": _classify_phone_error,
+}
+
+
 def analyze_errors(
     results: list[dict],
     ground_truth: dict[str, dict],
@@ -176,13 +187,10 @@ def analyze_errors(
             if norm_pred == norm_gt:
                 continue  # Correct extraction
 
-            # Classify the error
-            if field in ("first_name", "last_name"):
-                error_type, detail = _classify_name_error(pred_val, gt_val)
-            elif field == "email":
-                error_type, detail = _classify_email_error(pred_val, gt_val)
-            elif field == "phone_number":
-                error_type, detail = _classify_phone_error(pred_val, gt_val)
+            # Classify the error via field→classifier registry
+            classifier = _FIELD_CLASSIFIERS.get(field)
+            if classifier:
+                error_type, detail = classifier(pred_val, gt_val)
             else:
                 error_type, detail = ErrorType.UNKNOWN, ""
 
