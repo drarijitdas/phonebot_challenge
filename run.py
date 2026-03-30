@@ -62,6 +62,29 @@ def build_parser() -> argparse.ArgumentParser:
             "writes outputs/results.json, outputs/scores.json, outputs/comparison.json"
         ),
     )
+    # --- Module wiring flags ---
+    parser.add_argument(
+        "--postprocess", action=argparse.BooleanOptionalAction, default=True,
+        help="Enable post-extraction normalization and knowledge grounding",
+    )
+    parser.add_argument(
+        "--few-shot", action=argparse.BooleanOptionalAction, default=False,
+        help="Enable classifier-driven few-shot RAG retrieval for hard recordings",
+    )
+    parser.add_argument(
+        "--escalation", action=argparse.BooleanOptionalAction, default=True,
+        help="Enable escalation queue for low-confidence results",
+    )
+    parser.add_argument(
+        "--observability", action=argparse.BooleanOptionalAction, default=True,
+        help="Enable alerts, history, regression, error analysis, prompt registry",
+    )
+    parser.add_argument(
+        "--save-baseline",
+        action="store_true",
+        default=False,
+        help="Snapshot current metrics as the regression baseline",
+    )
     return parser
 
 
@@ -185,10 +208,14 @@ async def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
-    # --final mode: lock to best model and optimized prompt
+    # --final mode: lock to best model and optimized prompt, enable all modules
     if args.final:
         args.model = "claude-sonnet-4-6"
         args.prompt_version = "v2"
+        args.postprocess = True
+        args.few_shot = True
+        args.escalation = True
+        args.observability = True
         console.print("[bold yellow]FINAL SUBMISSION RUN[/bold yellow]")
         console.print("Model: claude-sonnet-4-6 (locked)")
         console.print("Prompt: extraction_v2.json (optimized)")
@@ -225,6 +252,19 @@ async def main() -> None:
     console.print(f"Output: outputs/results_{alias}.json")
     console.print(f"[green]Tracing initialized -- project: {project_name}[/green]")
 
+    # Module status
+    modules = []
+    if args.postprocess:
+        modules.append("postprocess")
+    if args.few_shot:
+        modules.append("few-shot")
+    if args.escalation:
+        modules.append("escalation")
+    if args.observability:
+        modules.append("observability")
+    if modules:
+        console.print(f"Modules: {', '.join(modules)}")
+
     # Load prompt version file (needed for --final to use v2 prompt)
     # Must happen BEFORE the pipeline import so _CALLER_INFO_MODEL is set
     prompt_file = Path(f"src/phonebot/prompts/extraction_{args.prompt_version}.json")
@@ -234,6 +274,20 @@ async def main() -> None:
         caller_model = build_caller_info_model(prompt_file)
         set_caller_info_model(caller_model)
         console.print(f"Loaded prompt: {prompt_file}")
+
+    # Register prompt in prompt registry
+    content_hash = None
+    if args.observability and prompt_file.exists():
+        from phonebot.observability.prompt_registry import register_prompt
+        prompt_record = register_prompt(prompt_file, args.prompt_version)
+        content_hash = prompt_record["content_hash"]
+        console.print(f"Prompt registered: {content_hash[:12]}...")
+
+    # Initialize latency monitoring
+    latency_monitor = None
+    if args.observability:
+        from phonebot.pipeline.shared import init_observability
+        latency_monitor = init_observability()
 
     # Discover recording IDs from cached transcripts
     transcript_dir = Path("data/transcripts")
@@ -245,8 +299,57 @@ async def main() -> None:
 
     console.print(f"\n[bold]Extracting from {len(recording_ids)} recordings...[/bold]")
 
-    # Run extraction pipeline (D-09: one graph invocation per recording, concurrent)
-    # Lazy import here — after init_tracing() — ensures OTEL patches are applied first.
+    # --- Few-shot preparation (classifier + ExampleStore) ---
+    few_shot_map: dict[str, str] = {}
+    classifications: dict = {}
+    if args.few_shot:
+        from phonebot.pipeline.classifier import classify_batch
+        from phonebot.pipeline.transcribe import get_transcript_text
+
+        classifications = classify_batch(recording_ids)
+        tier_counts = {}
+        for cls in classifications.values():
+            tier_counts[cls.tier.value] = tier_counts.get(cls.tier.value, 0) + 1
+        console.print(f"Classification: {tier_counts}")
+
+        # Auto-index ExampleStore if empty
+        from phonebot.knowledge.example_store import ExampleStore
+        from phonebot.evaluation.metrics import load_ground_truth as _load_gt_for_index
+
+        store = ExampleStore()
+        if store.count == 0:
+            gt_for_index = _load_gt_for_index(Path("data/ground_truth.json"))
+            indexed = store.index_ground_truth(gt_for_index)
+            console.print(f"[green]Indexed {indexed} examples into ChromaDB[/green]")
+        else:
+            console.print(f"ChromaDB: {store.count} examples indexed")
+
+        # Build few-shot context for hard recordings
+        for rid, cls_result in classifications.items():
+            if cls_result.use_few_shot:
+                cache_path = transcript_dir / f"{rid}.json"
+                transcript_text = get_transcript_text(cache_path)
+                examples = store.retrieve(transcript_text, k=2, exclude_id=rid)
+                context = store.format_few_shot_prompt(examples)
+                few_shot_map[rid] = context
+
+        if few_shot_map:
+            console.print(f"[green]Few-shot context prepared for {len(few_shot_map)} hard recording(s)[/green]")
+
+    # Build initial state factory with optional few-shot injection
+    initial_state_override = None
+    if few_shot_map:
+        from phonebot.pipeline.shared import base_initial_state
+
+        def _enhanced_initial_state(recording_id: str) -> dict:
+            state = base_initial_state(recording_id)
+            if recording_id in few_shot_map:
+                state["few_shot_prefix"] = few_shot_map[recording_id]
+            return state
+
+        initial_state_override = _enhanced_initial_state
+
+    # --- Run extraction pipeline ---
     t0 = time.monotonic()
     if args.pipeline == "v2":
         from phonebot.pipeline.extract_v2 import run_pipeline_v2
@@ -256,6 +359,7 @@ async def main() -> None:
             model_name=args.model,
             prompt_version=args.prompt_version,
             max_ac_iterations=args.max_ac_iterations,
+            initial_state_override=initial_state_override,
         )
     else:
         from phonebot.pipeline.extract import run_pipeline
@@ -264,10 +368,72 @@ async def main() -> None:
             recording_ids,
             model_name=args.model,
             prompt_version=args.prompt_version,
+            initial_state_override=initial_state_override,
         )
     duration = time.monotonic() - t0
 
     console.print(f"[green]Extraction complete in {duration:.1f}s[/green]")
+
+    # --- Post-processing: normalization + knowledge grounding ---
+    if args.postprocess:
+        from phonebot.pipeline.stages.postprocess import postprocess
+        from phonebot.pipeline.extract import compute_flagged_fields
+
+        for i, result in enumerate(results):
+            caller_info = result.get("caller_info") or {}
+            pp_result = postprocess(caller_info)
+            results[i]["caller_info"] = pp_result.caller_info
+            results[i]["flagged_fields"] = compute_flagged_fields(pp_result.caller_info)
+            results[i]["postprocess"] = {
+                "grounding": pp_result.grounding,
+                "contact_validation": pp_result.contact_validation,
+                "cross_reference": pp_result.cross_reference,
+                "normalizations": pp_result.normalizations_applied,
+            }
+        console.print(f"[green]Post-processing applied to {len(results)} results[/green]")
+
+    # --- Escalation check ---
+    escalation_count = 0
+    if args.escalation:
+        from phonebot.pipeline.escalation import check_escalation, write_escalation_queue, EscalationItem
+        from phonebot.pipeline.transcribe import get_transcript_text as _get_transcript
+
+        escalation_items: list[EscalationItem] = []
+        for result in results:
+            caller_info = result.get("caller_info") or {}
+            flagged = result.get("flagged_fields", [])
+            transcript_text = None
+            tp = transcript_dir / f"{result['id']}.json"
+            if tp.exists():
+                transcript_text = _get_transcript(tp)
+            contact_validation = (result.get("postprocess") or {}).get("contact_validation")
+            item = check_escalation(
+                recording_id=result["id"],
+                caller_info=caller_info,
+                flagged_fields=flagged,
+                transcript_text=transcript_text,
+                contact_validation=contact_validation,
+            )
+            if item:
+                escalation_items.append(item)
+                result["escalated"] = True
+            else:
+                result["escalated"] = False
+
+        escalation_count = len(escalation_items)
+        if escalation_items:
+            write_escalation_queue(escalation_items)
+            console.print(f"[yellow]{escalation_count} recording(s) escalated to review queue[/yellow]")
+        else:
+            console.print("[green]No escalations needed[/green]")
+
+    # Add classification metadata to results
+    if classifications:
+        for result in results:
+            cls = classifications.get(result["id"])
+            if cls:
+                result["difficulty_tier"] = cls.tier.value
+                result["difficulty_score"] = cls.score
 
     # Write results_{alias}.json (D-10, D-12, D-13)
     payload = {
@@ -296,6 +462,60 @@ async def main() -> None:
         table.add_row(field, f"{acc:.0%}")
     table.add_row("[bold]Overall[/bold]", f"[bold]{metrics['overall']:.0%}[/bold]")
     console.print(table)
+
+    # --- Observability hooks ---
+    if args.observability:
+        # Update prompt registry with accuracy
+        if content_hash:
+            from phonebot.observability.prompt_registry import update_accuracy
+            update_accuracy(content_hash, metrics)
+
+        # Alerts
+        from phonebot.observability.alerts import check_alerts, print_alerts
+        alerts = check_alerts(
+            metrics=metrics,
+            latency_summary=latency_monitor.to_dict() if latency_monitor else None,
+            escalation_count=escalation_count,
+            total_recordings=len(results),
+        )
+        print_alerts(alerts, console)
+
+        # History tracking
+        from phonebot.evaluation.history import record_run, print_history
+        record_run(
+            metrics=metrics,
+            model=args.model,
+            prompt_version=args.prompt_version,
+            pipeline=args.pipeline,
+            extra={"duration_seconds": round(duration, 2), "escalation_count": escalation_count},
+        )
+        print_history(n=5, console=console)
+
+        # Error analysis
+        from phonebot.evaluation.error_analysis import analyze_errors, print_error_analysis, save_error_analysis
+        errors = analyze_errors(results, gt)
+        print_error_analysis(errors, console)
+        save_error_analysis(errors)
+
+        # Regression check
+        from phonebot.evaluation.regression import check_regression, print_regression_report
+        regression_result = check_regression(current_metrics=metrics)
+        print_regression_report(regression_result, console)
+
+        # Latency summary
+        if latency_monitor:
+            latency_monitor.print_summary(console)
+
+    # Save baseline if requested
+    if args.save_baseline:
+        from phonebot.evaluation.regression import save_baseline
+        save_baseline(
+            metrics=metrics,
+            model=args.model,
+            prompt_version=args.prompt_version,
+            pipeline=args.pipeline,
+        )
+        console.print("[green]Baseline saved[/green]")
 
     # --final mode: write submission output files and print summary
     if args.final:

@@ -351,6 +351,7 @@ async def run_pipeline_v2(
     concurrency: int = 5,
     prompt_version: str = "v1",
     max_ac_iterations: int = 3,
+    initial_state_override: object = None,
 ) -> list[dict]:
     """Run actor-critic extraction pipeline concurrently.
 
@@ -364,8 +365,9 @@ async def run_pipeline_v2(
     """
 
     def _initial_state(recording_id: str) -> dict:
+        base = (initial_state_override or base_initial_state)(recording_id)
         return {
-            **base_initial_state(recording_id),
+            **base,
             "ac_iteration": 0,
             "ac_max_iterations": max_ac_iterations,
             "critic_approved": False,

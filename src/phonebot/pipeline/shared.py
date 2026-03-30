@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time as _time
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Callable, Optional
@@ -23,6 +24,24 @@ from pydantic import ValidationError
 from openinference.instrumentation import using_attributes
 
 from phonebot.models.model_registry import get_model
+
+
+# ---------------------------------------------------------------------------
+# Module-level observability singletons (populated by init_observability)
+# ---------------------------------------------------------------------------
+
+_latency_monitor: Any = None
+
+
+def init_observability() -> Any:
+    """Create and store a module-level LatencyMonitor for pipeline timing.
+
+    Returns the LatencyMonitor instance so run.py can read results after the run.
+    """
+    global _latency_monitor
+    from phonebot.observability.latency import LatencyMonitor
+    _latency_monitor = LatencyMonitor()
+    return _latency_monitor
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +59,7 @@ class PipelineVersion(str, Enum):
 # State TypedDict hierarchy — formalizes the shared fields between v1 and v2
 # ---------------------------------------------------------------------------
 
-class BasePipelineState(TypedDict):
+class BasePipelineState(TypedDict, total=False):
     """Base state fields shared by all pipeline versions.
 
     Both PipelineState (v1) and ActorCriticState (v2) extend this base,
@@ -53,6 +72,7 @@ class BasePipelineState(TypedDict):
     caller_info: Optional[dict]
     retry_count: int
     validation_errors: Optional[list[str]]
+    few_shot_prefix: Optional[str]
 
 
 async def validate_caller_info(state: dict, caller_info_cls: type) -> dict:
@@ -108,6 +128,9 @@ async def extract_caller_info(state: dict, caller_info_cls: type) -> dict:
     structured_model = model.with_structured_output(caller_info_cls, method="json_schema")
 
     transcript = state["transcript_text"]
+    few_shot_prefix = state.get("few_shot_prefix")
+    if few_shot_prefix:
+        transcript = few_shot_prefix + transcript
     validation_errors = state.get("validation_errors")
 
     if validation_errors:
@@ -204,6 +227,7 @@ async def run_pipeline_concurrent(
             if extra_metadata:
                 metadata.update(extra_metadata)
 
+            t0 = _time.monotonic()
             with using_attributes(
                 metadata=metadata,
                 prompt_template_version=prompt_version,
@@ -211,6 +235,10 @@ async def run_pipeline_concurrent(
                 final_state = await pipeline_graph.ainvoke(
                     initial_state_factory(recording_id)
                 )
+            duration = _time.monotonic() - t0
+
+            if _latency_monitor:
+                _latency_monitor.record(recording_id, "end_to_end", duration)
 
         return result_builder(recording_id, final_state, model_name)
 

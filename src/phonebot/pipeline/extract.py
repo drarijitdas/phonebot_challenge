@@ -152,6 +152,7 @@ async def run_pipeline(
     model_name: str = "claude-sonnet-4-6",
     concurrency: int = 5,
     prompt_version: str = "v1",
+    initial_state_override: object = None,
 ) -> list[dict]:
     """Run extraction pipeline concurrently over a list of recording IDs.
 
@@ -160,6 +161,8 @@ async def run_pipeline(
         model_name: Anthropic model name to use for extraction.
         concurrency: Max concurrent pipeline invocations.
         prompt_version: Prompt version tag attached to every Phoenix trace.
+        initial_state_override: Optional callable(recording_id) -> dict to
+            replace base_initial_state. Used by run.py to inject few-shot context.
 
     Returns:
         List of dicts with keys: id, caller_info, flagged_fields, model, timestamp.
@@ -170,6 +173,6 @@ async def run_pipeline(
         model_name=model_name,
         concurrency=concurrency,
         prompt_version=prompt_version,
-        initial_state_factory=base_initial_state,
+        initial_state_factory=initial_state_override or base_initial_state,
         result_builder=base_result,
     )
