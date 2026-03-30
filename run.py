@@ -3,6 +3,9 @@ import argparse
 import asyncio
 import json
 import os
+
+os.environ.setdefault("GRPC_VERBOSITY", "ERROR")
+
 import sys
 import time
 from datetime import datetime, timezone
