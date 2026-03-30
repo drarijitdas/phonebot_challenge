@@ -301,7 +301,7 @@ Additional observability: structured JSON logs (structlog), per-node latency per
 |----------|----------|
 | **Deepgram over Whisper** | Better German WER and managed API, but introduces vendor dependency and per-minute cost. Transcripts are cached to avoid repeat charges. |
 | **Claude over local models** | Higher accuracy but higher latency/cost per call. Ollama (llama3.2:3b) was tested at 0% accuracy — not viable for this domain. |
-| **Actor-critic (V2) vs single-pass (V1)** | 2-3x more LLM calls per recording, ~60% higher latency. Justified when false positives are costly; overkill for high-confidence recordings. The orchestrator (not used in these benchmarks) routes easy calls to V1 and hard calls to V2 based on a rule-based classifier. |
+| **Actor-critic (V2) vs single-pass (V1)** | 2-3x more LLM calls per recording, ~60% higher latency. Justified when false positives are costly; overkill for high-confidence recordings. The orchestrator routes easy calls to V1 and hard calls to V2 via the difficulty classifier when `--few-shot` is enabled. |
 | **Externalized prompts over code** | Adds a file I/O layer but enables GEPA optimization, prompt versioning, and A/B testing without code changes or redeployment. |
 | **Rule-based post-processing over LLM** | Zero latency and deterministic, but can't fix semantic errors. Handles normalization (E.164, Unicode NFC, email casing) perfectly; leaves semantic correction to the critic. |
 | **GEPA over manual prompt tuning** | Systematic but expensive (~$5-10 per run). Reflection LM (Opus) costs more than the extraction LM (Sonnet). Worth it for offline optimization; wouldn't run in production. |

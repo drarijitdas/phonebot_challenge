@@ -299,141 +299,31 @@ async def main() -> None:
 
     console.print(f"\n[bold]Extracting from {len(recording_ids)} recordings...[/bold]")
 
-    # --- Few-shot preparation (classifier + ExampleStore) ---
-    few_shot_map: dict[str, str] = {}
-    classifications: dict = {}
-    if args.few_shot:
-        from phonebot.pipeline.classifier import classify_batch
-        from phonebot.pipeline.transcribe import get_transcript_text
+    # --- Run extraction pipeline (orchestrator handles classify, extract, postprocess, escalation) ---
+    from phonebot.pipeline.orchestrator import run_extraction_pipeline
 
-        classifications = classify_batch(recording_ids)
-        tier_counts = {}
-        for cls in classifications.values():
-            tier_counts[cls.tier.value] = tier_counts.get(cls.tier.value, 0) + 1
-        console.print(f"Classification: {tier_counts}")
-
-        # Auto-index ExampleStore if empty
-        from phonebot.knowledge.example_store import ExampleStore
-        from phonebot.evaluation.metrics import load_ground_truth as _load_gt_for_index
-
-        store = ExampleStore()
-        if store.count == 0:
-            gt_for_index = _load_gt_for_index(Path("data/ground_truth.json"))
-            indexed = store.index_ground_truth(gt_for_index)
-            console.print(f"[green]Indexed {indexed} examples into ChromaDB[/green]")
-        else:
-            console.print(f"ChromaDB: {store.count} examples indexed")
-
-        # Build few-shot context for hard recordings
-        for rid, cls_result in classifications.items():
-            if cls_result.use_few_shot:
-                cache_path = transcript_dir / f"{rid}.json"
-                transcript_text = get_transcript_text(cache_path)
-                examples = store.retrieve(transcript_text, k=2, exclude_id=rid)
-                context = store.format_few_shot_prompt(examples)
-                few_shot_map[rid] = context
-
-        if few_shot_map:
-            console.print(f"[green]Few-shot context prepared for {len(few_shot_map)} hard recording(s)[/green]")
-
-    # Build initial state factory with optional few-shot injection
-    initial_state_override = None
-    if few_shot_map:
-        from phonebot.pipeline.shared import base_initial_state
-
-        def _enhanced_initial_state(recording_id: str) -> dict:
-            state = base_initial_state(recording_id)
-            if recording_id in few_shot_map:
-                state["few_shot_prefix"] = few_shot_map[recording_id]
-            return state
-
-        initial_state_override = _enhanced_initial_state
-
-    # --- Run extraction pipeline ---
     t0 = time.monotonic()
-    if args.pipeline == "v2":
-        from phonebot.pipeline.extract_v2 import run_pipeline_v2
-
-        results = await run_pipeline_v2(
-            recording_ids,
-            model_name=args.model,
-            prompt_version=args.prompt_version,
-            max_ac_iterations=args.max_ac_iterations,
-            initial_state_override=initial_state_override,
-        )
-    else:
-        from phonebot.pipeline.extract import run_pipeline
-
-        results = await run_pipeline(
-            recording_ids,
-            model_name=args.model,
-            prompt_version=args.prompt_version,
-            initial_state_override=initial_state_override,
-        )
+    results = await run_extraction_pipeline(
+        recording_ids,
+        model_name=args.model,
+        pipeline=args.pipeline,
+        prompt_version=args.prompt_version,
+        max_ac_iterations=args.max_ac_iterations,
+        enable_few_shot=args.few_shot,
+        enable_postprocess=args.postprocess,
+        enable_escalation=args.escalation,
+    )
     duration = time.monotonic() - t0
 
     console.print(f"[green]Extraction complete in {duration:.1f}s[/green]")
-
-    # --- Post-processing: normalization + knowledge grounding ---
     if args.postprocess:
-        from phonebot.pipeline.stages.postprocess import postprocess
-        from phonebot.pipeline.extract import compute_flagged_fields
-
-        for i, result in enumerate(results):
-            caller_info = result.get("caller_info") or {}
-            pp_result = postprocess(caller_info)
-            results[i]["caller_info"] = pp_result.caller_info
-            results[i]["flagged_fields"] = compute_flagged_fields(pp_result.caller_info)
-            results[i]["postprocess"] = {
-                "grounding": pp_result.grounding,
-                "contact_validation": pp_result.contact_validation,
-                "cross_reference": pp_result.cross_reference,
-                "normalizations": pp_result.normalizations_applied,
-            }
         console.print(f"[green]Post-processing applied to {len(results)} results[/green]")
-
-    # --- Escalation check ---
-    escalation_count = 0
     if args.escalation:
-        from phonebot.pipeline.escalation import check_escalation, write_escalation_queue, EscalationItem
-        from phonebot.pipeline.transcribe import get_transcript_text as _get_transcript
-
-        escalation_items: list[EscalationItem] = []
-        for result in results:
-            caller_info = result.get("caller_info") or {}
-            flagged = result.get("flagged_fields", [])
-            transcript_text = None
-            tp = transcript_dir / f"{result['id']}.json"
-            if tp.exists():
-                transcript_text = _get_transcript(tp)
-            contact_validation = (result.get("postprocess") or {}).get("contact_validation")
-            item = check_escalation(
-                recording_id=result["id"],
-                caller_info=caller_info,
-                flagged_fields=flagged,
-                transcript_text=transcript_text,
-                contact_validation=contact_validation,
-            )
-            if item:
-                escalation_items.append(item)
-                result["escalated"] = True
-            else:
-                result["escalated"] = False
-
-        escalation_count = len(escalation_items)
-        if escalation_items:
-            write_escalation_queue(escalation_items)
+        escalation_count = sum(1 for r in results if r.get("escalated"))
+        if escalation_count:
             console.print(f"[yellow]{escalation_count} recording(s) escalated to review queue[/yellow]")
         else:
             console.print("[green]No escalations needed[/green]")
-
-    # Add classification metadata to results
-    if classifications:
-        for result in results:
-            cls = classifications.get(result["id"])
-            if cls:
-                result["difficulty_tier"] = cls.tier.value
-                result["difficulty_score"] = cls.score
 
     # Write results_{alias}.json (D-10, D-12, D-13)
     payload = {

@@ -241,7 +241,15 @@ async def run_pipeline_concurrent(
                         ),
                         timeout=per_recording_timeout,
                     )
-            except asyncio.TimeoutError:
+            except Exception as exc:
+                if not isinstance(exc, asyncio.TimeoutError):
+                    from phonebot.observability.logging import get_logger
+                    get_logger("pipeline").error(
+                        "extraction_failed",
+                        recording_id=recording_id,
+                        error=str(exc),
+                        error_type=type(exc).__name__,
+                    )
                 final_state = initial_state_factory(recording_id)
                 final_state["caller_info"] = None
             duration = _time.monotonic() - t0
