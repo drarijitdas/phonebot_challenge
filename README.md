@@ -135,8 +135,11 @@ uv run python run.py --final                                     # canonical sub
 flowchart LR
     WAV["30 WAV files<br/>(German)"] --> DG["Deepgram Nova-3<br/>smart_format + diarize"]
     DG --> Cache["JSON transcript cache"]
-    Cache --> V1["V1 Pipeline"]
-    Cache --> V2["V2 Pipeline"]
+    Cache --> CLF["Difficulty Classifier<br/>(rule-based)"]
+    CLF -->|easy| V1["V1 Pipeline"]
+    CLF -->|medium/hard| V2["V2 Pipeline"]
+    KB["Knowledge Base"] -.->|name grounding| PP
+    Chroma["ChromaDB<br/>Few-Shot Store"] -.->|hard recordings| V2
     V1 --> PP["Post-processing<br/>(rule-based)"]
     V2 --> PP
     PP --> Eval["Evaluation<br/>+ Error Analysis"]
@@ -147,6 +150,9 @@ flowchart LR
     style V1 fill:#69b,stroke:#333,color:#000
     style V2 fill:#c66,stroke:#333,color:#000
     style PP fill:#9a6,stroke:#333,color:#000
+    style CLF fill:#da5,stroke:#333,color:#000
+    style KB fill:#a8d,stroke:#333,color:#000
+    style Chroma fill:#a8d,stroke:#333,color:#000
 ```
 
 ### V1 Pipeline — Simple Extract
@@ -194,6 +200,23 @@ The critic returns structured `CriticOutput` with per-field verdicts (`correct`/
 | **Post-processing** | Rule-based (no LLM): E.164 normalization, Unicode NFC, email lowercase, fuzzy name grounding via `rapidfuzz` | Zero latency, deterministic. Catches formatting inconsistencies the LLM introduces. Name dictionary grounding adjusts confidence when names don't match known German/international entries. |
 | **Observability** | Arize Phoenix (OTEL), structlog, custom cost/latency monitors | Auto-instruments every LangChain call. Persistent SQLite storage. Every run is traceable end-to-end. |
 | **Optimization** | GEPA (Guided Evolutionary Prompt Adaptation) | Offline prompt evolution with LLM-guided reflection. Treats prompts as 5-slot candidates, scores with weighted per-field accuracy, and uses a reflection LM (Claude Opus 4.6) to propose improvements based on failure analysis. |
+| **Knowledge base** | German name dictionary (`data/knowledge/german_names.json`) + `rapidfuzz` | Fuzzy name grounding adjusts confidence scores post-extraction. Threshold 75 similarity — ungrounded names get a 0.15 confidence penalty and are flagged for review. Not a correction layer — never overrides the LLM's extraction. |
+| **Few-shot RAG** | ChromaDB (embedded, cosine similarity) | Indexes all 30 transcript→ground_truth pairs. At extraction time, retrieves k=2 most similar solved examples for hard recordings. Injected as few-shot context into the LLM prompt. Highest-impact component for foreign names (e.g., "García" transcribed as "Gassia"). |
+| **Difficulty classifier** | Rule-based scorer (zero LLM cost) | Scores transcripts on 7 signals: length, speakers, email/phone markers, foreign name indicators, spelling detection, Deepgram confidence. Routes EASY (0-3) → V1, MEDIUM (4-6) → V2 with 1 iteration, HARD (7+) → V2 with 3 iterations + few-shot RAG. |
+
+### Knowledge Layer & Few-Shot RAG
+
+The pipeline includes a knowledge grounding layer that operates at two stages:
+
+**Pre-extraction (few-shot RAG):** For recordings classified as HARD by the difficulty classifier, ChromaDB retrieves the 2 most similar solved transcripts from the ground truth index. These are formatted as few-shot examples and prepended to the LLM prompt, giving the model concrete examples of how similar spoken-form transcripts map to structured output. Enabled via `--few-shot` flag.
+
+**Post-extraction (knowledge grounding):** After the LLM produces its extraction, rule-based modules validate and adjust confidence:
+
+1. **Name grounding** (`name_lookup.py`): Fuzzy-matches extracted names against a curated German/international name dictionary using `rapidfuzz`. Names below threshold 75 get a confidence penalty (0.15) and are flagged — but never overridden.
+2. **Contact pattern validation** (`contact_patterns.py`): Validates phone numbers against German patterns via `phonenumbers` library (prefix, length, E.164 format). Validates email format and checks domain against known providers (gmail.com, web.de, t-online.de, etc.). Invalid patterns incur confidence penalties (0.25 phone, 0.20 email, 0.10 unknown domain).
+3. **Cross-reference check**: Verifies that the extracted name appears in the email local part where expected (e.g., `johanna.schmidt` in the email matches first_name=Johanna, last_name=Schmidt).
+
+These grounding signals feed into the escalation decision: recordings with overall confidence < 0.5 or >2 flagged fields are routed to a human review queue (`outputs/escalation_queue.json`).
 
 ### Accuracy Results
 
