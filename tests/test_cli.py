@@ -18,18 +18,22 @@ def test_help_exits_zero():
 def test_default_args():
     """CLI runs without arguments (uses defaults) and exits cleanly.
 
-    Without ANTHROPIC_API_KEY, the early model validation rejects the default
-    claude model with a clear error (not a traceback). With the key, it starts
-    the pipeline normally.
+    run.py loads .env via load_dotenv(), so ANTHROPIC_API_KEY is available
+    if a .env file exists — regardless of the parent process environment.
+    Without any key source, the early model validation rejects the default
+    claude model with a clear error (not a traceback).
     """
-    import os
+    from pathlib import Path
+
+    has_env_file = Path(".env").exists()
 
     result = subprocess.run(
         [sys.executable, "run.py"],
         capture_output=True,
         text=True,
     )
-    if os.getenv("ANTHROPIC_API_KEY"):
+    if has_env_file:
+        # run.py loads .env itself, so the key is available to the subprocess
         assert result.returncode == 0
         assert "Phonebot pipeline starting" in result.stdout
     else:

@@ -8,10 +8,14 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from rich.console import Console
-from rich.table import Table
+from dotenv import load_dotenv
 
-from phonebot.models.model_registry import model_alias
+load_dotenv()  # Load .env before any API key checks
+
+from rich.console import Console  # noqa: E402
+from rich.table import Table  # noqa: E402
+
+from phonebot.models.model_registry import model_alias  # noqa: E402
 
 console = Console()
 
@@ -36,6 +40,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--prompt-version",
         default="v1",
         help="Prompt version tag attached to every Phoenix trace",
+    )
+    parser.add_argument(
+        "--pipeline",
+        default="v1",
+        choices=["v1", "v2"],
+        help="Pipeline version: v1 (simple extract) or v2 (actor-critic)",
+    )
+    parser.add_argument(
+        "--max-ac-iterations",
+        type=int,
+        default=3,
+        help="Max actor-critic iterations (v2 pipeline only)",
     )
     parser.add_argument(
         "--final",
@@ -188,6 +204,8 @@ async def main() -> None:
 
     # Compute model-specific output path (D-10: results_{alias}.json)
     alias = model_alias(args.model)
+    if args.pipeline == "v2":
+        alias = f"{alias}_ac"
     output_path = Path(f"outputs/results_{alias}.json")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -201,6 +219,7 @@ async def main() -> None:
 
     console.print("[bold green]Phonebot pipeline starting...[/bold green]")
     console.print(f"Model: {args.model}")
+    console.print(f"Pipeline: {args.pipeline}" + (" (actor-critic)" if args.pipeline == "v2" else ""))
     console.print(f"Prompt version: {args.prompt_version}")
     console.print(f"Recordings: {args.recordings_dir}")
     console.print(f"Output: outputs/results_{alias}.json")
@@ -228,14 +247,24 @@ async def main() -> None:
 
     # Run extraction pipeline (D-09: one graph invocation per recording, concurrent)
     # Lazy import here — after init_tracing() — ensures OTEL patches are applied first.
-    from phonebot.pipeline.extract import run_pipeline
-
     t0 = time.monotonic()
-    results = await run_pipeline(
-        recording_ids,
-        model_name=args.model,
-        prompt_version=args.prompt_version,
-    )
+    if args.pipeline == "v2":
+        from phonebot.pipeline.extract_v2 import run_pipeline_v2
+
+        results = await run_pipeline_v2(
+            recording_ids,
+            model_name=args.model,
+            prompt_version=args.prompt_version,
+            max_ac_iterations=args.max_ac_iterations,
+        )
+    else:
+        from phonebot.pipeline.extract import run_pipeline
+
+        results = await run_pipeline(
+            recording_ids,
+            model_name=args.model,
+            prompt_version=args.prompt_version,
+        )
     duration = time.monotonic() - t0
 
     console.print(f"[green]Extraction complete in {duration:.1f}s[/green]")

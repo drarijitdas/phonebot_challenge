@@ -145,8 +145,17 @@ def write_result_file(tmpdir: str, payload: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
+def test_label_from_path():
+    """_label_from_path extracts label from result filename."""
+    from compare import _label_from_path
+
+    assert _label_from_path("outputs/results_claude-sonnet-4-6.json") == "claude-sonnet-4-6"
+    assert _label_from_path("outputs/results_claude-sonnet-4-6_ac.json") == "claude-sonnet-4-6_ac"
+    assert _label_from_path("outputs/results_ollama_llama3.2_3b.json") == "ollama_llama3.2_3b"
+
+
 def test_compare_loads_two_files():
-    """Given two mock result JSON files, load_result_files loads both payloads."""
+    """Given two mock result JSON files, load_result_files loads both payloads with labels."""
     from compare import load_result_files
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -157,9 +166,9 @@ def test_compare_loads_two_files():
         payloads = load_result_files(pattern)
 
     assert len(payloads) == 2
-    model_names = {p["model"] for p in payloads}
-    assert "claude-sonnet-4-6" in model_names
-    assert "ollama_llama3.2_3b" in model_names
+    labels = {p["_label"] for p in payloads}
+    assert "claude-sonnet-4-6" in labels
+    assert "ollama_llama3.2_3b" in labels
 
 
 def test_compare_per_field_accuracy():

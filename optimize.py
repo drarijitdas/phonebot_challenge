@@ -33,6 +33,7 @@ from phonebot.evaluation.metrics import (
 )
 from phonebot.observability import init_tracing, shutdown_tracing
 from phonebot.pipeline.extract import run_pipeline, set_caller_info_model
+from phonebot.pipeline.extract_v2 import run_pipeline_v2
 from phonebot.pipeline.transcribe import get_transcript_text
 from phonebot.prompts import build_caller_info_model, load_prompt
 
@@ -42,7 +43,9 @@ console = Console()
 
 V1_PATH = Path("src/phonebot/prompts/extraction_v1.json")
 V2_PATH = Path("src/phonebot/prompts/extraction_v2.json")
+V2_AC_PATH = Path("src/phonebot/prompts/extraction_v2_ac.json")
 REPORT_PATH = Path("outputs/optimization_report.json")
+REPORT_AC_PATH = Path("outputs/optimization_report_ac.json")
 GT_PATH = Path("data/ground_truth.json")
 TRANSCRIPT_DIR = Path("data/transcripts")
 
@@ -176,10 +179,14 @@ class PhonebotAdapter:
         ground_truth: dict[str, dict[str, Any]],
         field_weights: dict[str, float],
         train_ids: list[str],
+        pipeline: str = "v1",
+        max_ac_iterations: int = 3,
     ) -> None:
         self.ground_truth = ground_truth
         self.field_weights = field_weights
         self.train_ids = train_ids
+        self.pipeline = pipeline
+        self.max_ac_iterations = max_ac_iterations
         self._iteration = 0
 
     def _candidate_to_prompt_json(self, candidate: dict[str, str]) -> dict:
@@ -215,13 +222,23 @@ class PhonebotAdapter:
             set_caller_info_model(model_class)
             # Tag Phoenix traces with the optimization iteration (D-06)
             os.environ["PHOENIX_PROJECT"] = "phonebot-extraction"
-            results = asyncio.run(
-                run_pipeline(
-                    recording_ids,
-                    model_name="claude-sonnet-4-6",
-                    prompt_version=prompt_version,
+            if self.pipeline == "v2":
+                results = asyncio.run(
+                    run_pipeline_v2(
+                        recording_ids,
+                        model_name="claude-sonnet-4-6",
+                        prompt_version=prompt_version,
+                        max_ac_iterations=self.max_ac_iterations,
+                    )
                 )
-            )
+            else:
+                results = asyncio.run(
+                    run_pipeline(
+                        recording_ids,
+                        model_name="claude-sonnet-4-6",
+                        prompt_version=prompt_version,
+                    )
+                )
         finally:
             tmp_path.unlink(missing_ok=True)
 
@@ -408,6 +425,14 @@ def main() -> None:
         "--seed", type=int, default=42,
         help="Random seed for train/val split and GEPA",
     )
+    parser.add_argument(
+        "--pipeline", default="v1", choices=["v1", "v2"],
+        help="Pipeline to optimize: v1 (simple extract) or v2 (actor-critic)",
+    )
+    parser.add_argument(
+        "--max-ac-iterations", type=int, default=3,
+        help="Max actor-critic iterations (v2 pipeline only)",
+    )
     args = parser.parse_args()
 
     if args.max_calls < 60:
@@ -445,13 +470,30 @@ def main() -> None:
     for f, w in weights.items():
         console.print(f"  {f}: {w:.3f}")
 
+    # Select output paths and pipeline runner based on --pipeline
+    use_ac = args.pipeline == "v2"
+    output_prompt_path = V2_AC_PATH if use_ac else V2_PATH
+    output_report_path = REPORT_AC_PATH if use_ac else REPORT_PATH
+    gepa_run_dir = "outputs/gepa_run_ac/" if use_ac else "outputs/gepa_run/"
+    pipeline_label = "v2 (actor-critic)" if use_ac else "v1"
+    console.print(f"Pipeline: {pipeline_label}")
+
+    def _run_eval(ids: list[str], prompt_path: Path, version_tag: str) -> list[dict]:
+        """Run pipeline (v1 or v2) synchronously for baseline/val evaluation."""
+        m = build_caller_info_model(prompt_path)
+        set_caller_info_model(m)
+        if use_ac:
+            return asyncio.run(run_pipeline_v2(
+                ids, model_name="claude-sonnet-4-6", prompt_version=version_tag,
+                max_ac_iterations=args.max_ac_iterations,
+            ))
+        return asyncio.run(run_pipeline(
+            ids, model_name="claude-sonnet-4-6", prompt_version=version_tag,
+        ))
+
     # Compute baseline accuracy on train set
     console.print("\n[bold]Computing baseline accuracy on train set...[/bold]")
-    v1_model = build_caller_info_model(V1_PATH)
-    set_caller_info_model(v1_model)
-    train_results = asyncio.run(run_pipeline(
-        train_ids, model_name="claude-sonnet-4-6", prompt_version="v1_baseline",
-    ))
+    train_results = _run_eval(train_ids, V1_PATH, "v1_baseline")
     train_gt = {rid: gt[rid] for rid in train_ids}
     baseline_metrics = compute_metrics(train_results, train_gt)
     console.print(f"Baseline train accuracy: {baseline_metrics['overall']:.1%}")
@@ -461,6 +503,8 @@ def main() -> None:
         ground_truth=gt,
         field_weights=weights,
         train_ids=train_ids,
+        pipeline=args.pipeline,
+        max_ac_iterations=args.max_ac_iterations,
     )
 
     # Run GEPA optimization (D-01, D-02, D-15)
@@ -475,7 +519,7 @@ def main() -> None:
         reflection_lm="anthropic/claude-opus-4-6",
         max_metric_calls=args.max_calls,
         seed=args.seed,
-        run_dir="outputs/gepa_run/",
+        run_dir=gepa_run_dir,
     )
 
     duration = time.monotonic() - t0
@@ -483,25 +527,17 @@ def main() -> None:
 
     # Save optimized prompt (D-08)
     optimized_candidate = result.best_candidate
-    save_optimized_prompt(optimized_candidate, V2_PATH)
-    console.print(f"Optimized prompt saved to {V2_PATH}")
+    save_optimized_prompt(optimized_candidate, output_prompt_path)
+    console.print(f"Optimized prompt saved to {output_prompt_path}")
 
     # Compute optimized accuracy on validation set
     console.print("\n[bold]Evaluating optimized prompt on validation set...[/bold]")
-    opt_model = build_caller_info_model(V2_PATH)
-    set_caller_info_model(opt_model)
-    val_results = asyncio.run(run_pipeline(
-        val_ids, model_name="claude-sonnet-4-6", prompt_version="v2_optimized",
-    ))
+    val_results = _run_eval(val_ids, output_prompt_path, "v2_optimized")
     val_gt = {rid: gt[rid] for rid in val_ids}
     optimized_metrics = compute_metrics(val_results, val_gt)
 
     # Compute baseline on val set for fair comparison
-    v1_model = build_caller_info_model(V1_PATH)
-    set_caller_info_model(v1_model)
-    val_baseline_results = asyncio.run(run_pipeline(
-        val_ids, model_name="claude-sonnet-4-6", prompt_version="v1_baseline_val",
-    ))
+    val_baseline_results = _run_eval(val_ids, V1_PATH, "v1_baseline_val")
     val_baseline_metrics = compute_metrics(val_baseline_results, val_gt)
 
     # Build and write optimization report (D-16)
@@ -510,6 +546,7 @@ def main() -> None:
         "duration_seconds": round(duration, 1),
         "max_metric_calls": args.max_calls,
         "seed": args.seed,
+        "pipeline": args.pipeline,
         "train_ids": train_ids,
         "val_ids": val_ids,
         "field_weights": weights,
@@ -532,11 +569,11 @@ def main() -> None:
         "delta_overall": round(
             optimized_metrics["overall"] - val_baseline_metrics["overall"], 4
         ),
-        "optimized_prompt_path": str(V2_PATH),
-        "gepa_run_dir": "outputs/gepa_run/",
+        "optimized_prompt_path": str(output_prompt_path),
+        "gepa_run_dir": gepa_run_dir,
     }
-    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text(
+    output_report_path.parent.mkdir(parents=True, exist_ok=True)
+    output_report_path.write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
@@ -565,8 +602,8 @@ def main() -> None:
     )
     console.print(table)
 
-    console.print(f"\nReport: {REPORT_PATH}")
-    console.print(f"Optimized prompt: {V2_PATH}")
+    console.print(f"\nReport: {output_report_path}")
+    console.print(f"Optimized prompt: {output_prompt_path}")
     console.print(f"Phoenix traces: {phoenix_url}")
 
     shutdown_tracing()

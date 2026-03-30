@@ -20,16 +20,30 @@ from phonebot.evaluation.metrics import FIELDS, compute_metrics, load_ground_tru
 console = Console()
 
 
+def _label_from_path(path: str) -> str:
+    """Derive a display label from a result file path.
+
+    'outputs/results_claude-sonnet-4-6.json'    -> 'claude-sonnet-4-6'
+    'outputs/results_claude-sonnet-4-6_ac.json'  -> 'claude-sonnet-4-6_ac'
+    """
+    stem = Path(path).stem  # e.g. 'results_claude-sonnet-4-6_ac'
+    if stem.startswith("results_"):
+        return stem[len("results_"):]
+    return stem
+
+
 def load_result_files(pattern: str = "outputs/results_*.json") -> list[dict]:
     """Load all result JSON files matching the glob pattern.
 
-    Returns list of parsed JSON payloads sorted by model name.
+    Returns list of parsed JSON payloads sorted by file name.
+    Each payload gets a '_label' key derived from its filename (unique per file).
     """
     paths = sorted(glob.glob(pattern))
     payloads = []
     for p in paths:
         data = json.loads(Path(p).read_text(encoding="utf-8"))
         data["_source_path"] = p
+        data["_label"] = _label_from_path(p)
         payloads.append(data)
     return payloads
 
@@ -64,10 +78,10 @@ def build_comparison(
     model_per_recording: dict[str, dict[str, dict]] = {}
 
     for payload in payloads:
-        model_name = payload["model"]
+        label = payload.get("_label") or payload["model"]
         metrics = compute_metrics(payload["results"], ground_truth)
         avg_latency = payload.get("avg_latency_per_recording", 0)
-        model_metrics[model_name] = {
+        model_metrics[label] = {
             "per_field": metrics["per_field"],
             "overall": metrics["overall"],
             "avg_latency": avg_latency,
@@ -77,7 +91,7 @@ def build_comparison(
         for r in payload["results"]:
             info = r.get("caller_info") or {}
             per_rec[r["id"]] = info
-        model_per_recording[model_name] = per_rec
+        model_per_recording[label] = per_rec
 
     # Build per-recording diffs (D-14): show where any two models disagree
     model_names = list(model_metrics.keys())
