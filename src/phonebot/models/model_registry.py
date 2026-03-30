@@ -38,7 +38,11 @@ def get_model(name: str):
                 "ANTHROPIC_API_KEY not set. Required for Claude models. "
                 "Add it to your .env file."
             )
-        return ChatAnthropic(model=name)
+        return ChatAnthropic(
+            model=name,
+            timeout=60,
+            max_retries=2,
+        )
     elif name.startswith("ollama:"):
         ollama_model = name[len("ollama:"):]
         return ChatOllama(

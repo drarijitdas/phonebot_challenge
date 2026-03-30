@@ -216,6 +216,8 @@ async def run_pipeline_concurrent(
     effective_concurrency = int(os.getenv("EXTRACT_CONCURRENCY", str(concurrency)))
     semaphore = asyncio.Semaphore(effective_concurrency)
 
+    per_recording_timeout = int(os.getenv("EXTRACT_TIMEOUT", "120"))
+
     async def process_one(recording_id: str) -> dict:
         async with semaphore:
             metadata = {
@@ -228,13 +230,20 @@ async def run_pipeline_concurrent(
                 metadata.update(extra_metadata)
 
             t0 = _time.monotonic()
-            with using_attributes(
-                metadata=metadata,
-                prompt_template_version=prompt_version,
-            ):
-                final_state = await pipeline_graph.ainvoke(
-                    initial_state_factory(recording_id)
-                )
+            try:
+                with using_attributes(
+                    metadata=metadata,
+                    prompt_template_version=prompt_version,
+                ):
+                    final_state = await asyncio.wait_for(
+                        pipeline_graph.ainvoke(
+                            initial_state_factory(recording_id)
+                        ),
+                        timeout=per_recording_timeout,
+                    )
+            except asyncio.TimeoutError:
+                final_state = initial_state_factory(recording_id)
+                final_state["caller_info"] = None
             duration = _time.monotonic() - t0
 
             if _latency_monitor:

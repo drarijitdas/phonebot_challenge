@@ -31,7 +31,7 @@ from phonebot.pipeline.shared import (  # noqa: E402
 )
 from phonebot.prompts import build_caller_info_model  # noqa: E402
 
-EXTRACT_CONCURRENCY = int(os.getenv("EXTRACT_CONCURRENCY", "5"))
+EXTRACT_CONCURRENCY = int(os.getenv("EXTRACT_CONCURRENCY", "10"))
 TRANSCRIPT_DIR = Path("data/transcripts")
 CONFIDENCE_THRESHOLD = 0.7
 

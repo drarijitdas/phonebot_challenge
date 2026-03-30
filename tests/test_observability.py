@@ -152,15 +152,15 @@ class TestInitTracingReadsPhoenixProjectEnv:
             assert call_kwargs.get("project_name") == "my-test-project"
 
 
-class TestBatchFalseForCliScript:
-    """register() is called with batch=False for reliable span flushing in CLI scripts."""
+class TestBatchTrueForThroughput:
+    """register() is called with batch=True for async batch export throughput."""
 
-    def test_batch_false_for_cli_script(self):
-        """register() is called with batch=False for synchronous export."""
+    def test_batch_true_for_throughput(self):
+        """register() is called with batch=True for async batch export."""
         with _patched_obs() as (obs, mock_register):
             obs.init_tracing()
             call_kwargs = mock_register.call_args[1]
-            assert call_kwargs.get("batch") is False
+            assert call_kwargs.get("batch") is True
 
 
 class TestRunPipelineAcceptsPromptVersion:

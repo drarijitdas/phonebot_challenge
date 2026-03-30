@@ -49,12 +49,12 @@ def init_tracing() -> str:
         pass
 
     # Register OTEL tracer provider with auto-instrumentation (D-08)
-    # batch=False: synchronous export for CLI scripts (RESEARCH Pattern 1)
+    # batch=True: async batch export for better throughput
     # project_name passed explicitly — do NOT rely on Phoenix auto-reading env var (Pitfall 6)
     _tracer_provider = register(
         project_name=project_name,
         auto_instrument=True,
-        batch=False,
+        batch=True,
     )
 
     # Return session URL if available, else fallback
