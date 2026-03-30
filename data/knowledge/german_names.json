@@ -1,4 +1,11 @@
 {
+  "sources": [
+    "Gesellschaft für deutsche Sprache (GfdS) — Vornamen-Statistik (most popular German first names by decade)",
+    "Statistisches Bundesamt (Destatis) — German census surname frequency tables",
+    "Deutsche Post Adressbuch — common surname distribution in German postal records",
+    "Ground truth coverage — names from call_01 through call_30 plus phonetic variants",
+    "Behind the Name (behindthename.com) — international name frequency data for Arabic, Japanese, Polish, Swedish, Korean, Indian, French, Italian, and Spanish names"
+  ],
   "first_names": [
     "Johanna", "Herbert", "Annika", "Matthias", "Sandra", "Klaus", "Julia",
     "Thomas", "Petra", "Stefan", "Brigitte", "Michael", "Sabine", "Rainer",
