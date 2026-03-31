@@ -116,6 +116,8 @@ Good luck!
 
 ## Solution Architecture
 
+Loom video walkthrough: https://www.loom.com/share/1b6efdffa4634d44b3ed2eb392cf0a22
+
 ### Quick Start
 
 ```bash
