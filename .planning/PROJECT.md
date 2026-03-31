@@ -2,53 +2,48 @@
 
 ## What This Is
 
-A post-processing pipeline that transcribes German AI phone bot recordings and extracts structured caller information (first name, last name, email, phone number). Built as a technical challenge submission demonstrating production-ready AI engineering with observability, prompt optimization, and multi-model A/B testing.
+A production-ready pipeline that transcribes German AI phone bot recordings and extracts structured caller information (first name, last name, email, phone number) with 84% accuracy. Features retry-resilient LangGraph extraction, GEPA-optimized prompts, multi-model A/B testing, and full Arize Phoenix observability. Built as a technical challenge submission demonstrating production-ready AI engineering.
 
 ## Core Value
 
 Accurate extraction of caller contact information from German phone bot recordings — every field correct, every time.
 
-## Current Milestone: v1.0 Audio Entity Extraction Pipeline
+## Current State
 
-**Goal:** Build the full end-to-end extraction pipeline with production-ready observability and prompt optimization.
+**v1.0 shipped** (2026-03-28) — all 7 phases complete, 22/22 requirements satisfied.
 
-**Target features:**
-- Deepgram Nova-3 transcription of German audio recordings
-- LangGraph-orchestrated extraction pipeline with structured Pydantic output
-- Pydantic BaseModel-based prompting system (docstrings as system prompts, field descriptions as variable-specific prompts)
-- Multi-model support (open-source through Claude Sonnet 4.6) for A/B comparison
-- GEPA prompt optimization for tuning extraction prompts
-- Arize Phoenix integration for observability, tracing, and A/B testing
-- Evaluation harness comparing extractions against ground truth
+- 4,528 lines of Python across 137 files
+- 104 tests passing, 1 skipped (live API gate)
+- 84% overall extraction accuracy (90% first_name, 87% last_name, 67% email, 97% phone_number)
+- Tech stack: Python 3.13, LangGraph, Pydantic, Deepgram Nova-3, Arize Phoenix, GEPA, Claude Sonnet 4.6
 
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
-<!-- Shipped and confirmed valuable. -->
-
-(None yet — ship to validate)
+- [x] Pydantic BaseModel prompting system — v1.0
+- [x] Evaluation against ground truth with per-entity accuracy — v1.0
+- [x] Transcribe 30 German WAV recordings via Deepgram Nova-3 — v1.0
+- [x] Extract first_name, last_name, email, phone_number from transcripts — v1.0 (82% baseline)
+- [x] LangGraph pipeline orchestration — v1.0
+- [x] Arize Phoenix observability and tracing — v1.0
+- [x] Multi-model support for A/B comparison — v1.0 (Claude 83% vs Ollama)
+- [x] GEPA prompt optimization — v1.0 (+2% via cross-reference spelling)
+- [x] Retry loop for validation failures — v1.0 (max 2 retries)
+- [x] Confidence flagging — v1.0 (threshold 0.7)
+- [x] Final submission package — v1.0 (--final flag)
 
 ### Active
 
-<!-- Current scope. Building toward these. -->
-
-- [ ] Transcribe 30 German WAV recordings via Deepgram Nova-3
-- [ ] Extract first_name, last_name, email, phone_number from transcripts
-- [ ] LangGraph pipeline orchestration
-- [ ] Pydantic BaseModel prompting system
-- [ ] Multi-model support for A/B comparison
-- [ ] GEPA prompt optimization
-- [ ] Arize Phoenix observability and tracing
-- [ ] Evaluation against ground truth with per-entity accuracy
+(none — no next milestone planned)
 
 ### Out of Scope
-
-<!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
 - Real-time/streaming transcription — challenge uses pre-recorded files only
 - Web UI or API server — CLI pipeline is sufficient for the challenge
 - Multi-language support beyond German — all recordings are German
+- Fine-tuning an LLM on 30 recordings — overfitting risk
+- Ensemble voting across models — marginal benefit with 30 files
 
 ## Context
 
@@ -69,32 +64,16 @@ Accurate extraction of caller contact information from German phone bot recordin
 
 ## Key Decisions
 
-<!-- Decisions that constrain future work. Add throughout project lifecycle. -->
-
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Deepgram Nova-3 for STT | Strong German support, smart_format for phones/emails, simple API | -- Pending |
-| LangGraph for orchestration | Graph-based pipeline enables modular steps, retries, branching | -- Pending |
-| Pydantic BaseModel prompting | Docstrings as system prompts, field descriptions as extraction prompts — self-documenting and type-safe | -- Pending |
-| GEPA for prompt optimization | Automated prompt tuning against ground truth | -- Pending |
-| Arize Phoenix for observability | Tracing, A/B testing, prompt engineering dashboard | -- Pending |
-
-## Evolution
-
-This document evolves at phase transitions and milestone boundaries.
-
-**After each phase transition** (via `/gsd:transition`):
-1. Requirements invalidated? -> Move to Out of Scope with reason
-2. Requirements validated? -> Move to Validated with phase reference
-3. New requirements emerged? -> Add to Active
-4. Decisions to log? -> Add to Key Decisions
-5. "What This Is" still accurate? -> Update if drifted
-
-**After each milestone** (via `/gsd:complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+| Deepgram Nova-3 for STT | Strong German support, smart_format, simple API | smart_format does NOT normalize German phone/email — spoken-form only |
+| LangGraph for orchestration | Graph-based pipeline enables modular steps, retries, branching | Validated — START->transcribe->extract->validate->(END\|extract) topology |
+| Pydantic BaseModel prompting | Docstrings as system prompts, field descriptions as extraction prompts | Validated — self-documenting, type-safe, GEPA-optimizable |
+| GEPA for prompt optimization | Automated prompt tuning against ground truth | Validated — +2% accuracy, +10% last_name via cross-reference spelling |
+| Arize Phoenix for observability | Tracing, A/B testing, prompt engineering dashboard | Validated — 30 traces with span-level visibility, persistent SQLite |
+| Claude Sonnet 4.6 as primary model | Best accuracy in A/B test (83% vs Ollama) | Validated — locked as --final default |
+| Retry with error context, not previous output | Prevents error amplification on retry (D-02) | Validated — clean re-extraction on each retry |
+| Confidence threshold 0.7 | Balance between flagging noise and catching uncertain extractions | Validated — compute_flagged_fields < 0.7 |
 
 ---
-*Last updated: 2026-03-26 after milestone v1.0 initialization*
+*Last updated: 2026-03-28 after v1.0 milestone completion*

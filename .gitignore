@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Outputs
+outputs/
+
+# Phoenix persistent trace storage
+.phoenix/

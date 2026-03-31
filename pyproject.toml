@@ -1,0 +1,54 @@
+[project]
+name = "phonebot-challenge"
+version = "0.1.0"
+description = "Extract caller info from German phone bot recordings"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.12.5",
+    "phonenumbers>=9.0.26",
+    "rich>=14.3.3",
+    "python-dotenv>=1.2.2",
+    "deepgram-sdk>=6.1.0",
+    "langgraph>=1.1.3",
+    "langchain-anthropic>=1.4.0",
+    "arize-phoenix>=13.19.0",
+    "arize-phoenix-otel>=0.15.0",
+    "openinference-instrumentation-langchain>=0.1.61",
+    "langchain-ollama>=1.0.1",
+    "gepa[full]>=0.1.1",
+    "structlog>=24.4.0",
+    "chromadb>=0.5.0",
+    "rapidfuzz>=3.9.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0.2"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/phonebot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    # ldap3 2.9.1 (latest) uses deprecated pyasn1 names — upstream issue
+    "ignore:tagMap is deprecated:DeprecationWarning:ldap3",
+    "ignore:typeMap is deprecated:DeprecationWarning:ldap3",
+    # arize-phoenix 13.19.0 (latest) internal deprecations — upstream issue
+    "ignore:The phoenix.evals.templating module is deprecated:DeprecationWarning:phoenix",
+    "ignore:Passing types to.*strawberry.union.*is deprecated:DeprecationWarning:phoenix",
+    # strawberry-graphql pinned by arize-phoenix, can't upgrade — upstream issue
+    "ignore:The 'lia' package has been renamed:DeprecationWarning:strawberry",
+    # pydantic json_encoders used by Phoenix internals — upstream issue
+    "ignore:.*json_encoders.*is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.25.0",
+]
