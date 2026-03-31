@@ -20,16 +20,28 @@ from phonebot.evaluation.metrics import FIELDS, compute_metrics, load_ground_tru
 console = Console()
 
 
-def _label_from_path(path: str) -> str:
-    """Derive a display label from a result file path.
+_PROMPT_TO_PIPELINE: dict[str, str] = {
+    "v1": "v1",
+    "v2": "v1",        # GEPA-optimized prompt, still v1 pipeline
+    "v2_ac": "v2-ac",  # actor-critic pipeline
+}
 
-    'outputs/results_claude-sonnet-4-6.json'    -> 'claude-sonnet-4-6'
-    'outputs/results_claude-sonnet-4-6_ac.json'  -> 'claude-sonnet-4-6_ac'
+
+def _label_from_payload(data: dict, path: str) -> str:
+    """Build a descriptive label from result payload metadata.
+
+    Combines pipeline variant and prompt version so the comparison table
+    clearly shows *what configuration* produced each result, not just the
+    model name.
+
+    Example: 'v1 pipeline + v2 prompt (GEPA)'
     """
-    stem = Path(path).stem  # e.g. 'results_claude-sonnet-4-6_ac'
-    if stem.startswith("results_"):
-        return stem[len("results_"):]
-    return stem
+    prompt_ver = data.get("prompt_version", "")
+    pipeline = _PROMPT_TO_PIPELINE.get(prompt_ver, "v1")
+    parts = [f"{pipeline} pipeline", f"{prompt_ver} prompt"]
+    if prompt_ver.startswith("v2") and prompt_ver != "v2_ac":
+        parts.append("(GEPA)")
+    return " + ".join(parts)
 
 
 def load_result_files(pattern: str = "outputs/results_*.json") -> list[dict]:
@@ -43,7 +55,7 @@ def load_result_files(pattern: str = "outputs/results_*.json") -> list[dict]:
     for p in paths:
         data = json.loads(Path(p).read_text(encoding="utf-8"))
         data["_source_path"] = p
-        data["_label"] = _label_from_path(p)
+        data["_label"] = _label_from_payload(data, p)
         payloads.append(data)
     return payloads
 
